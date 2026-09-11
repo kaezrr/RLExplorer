@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://dcc4pqt4nrtoq"]
+
+[ext_resource type="Script" uid="uid://ca4y5fajhpuwx" path="res://scripts/GridWorld.gd" id="1_nnsk1"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_mf55y"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rwgxs"]
+
+[sub_resource type="Sky" id="Sky_nnsk1"]
+sky_material = SubResource("ProceduralSkyMaterial_rwgxs")
+
+[sub_resource type="Environment" id="Environment_f1vde"]
+background_mode = 2
+sky = SubResource("Sky_nnsk1")
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_vi7ne"]
+
+[node name="Root" type="Node3D" unique_id=786286093]
+script = ExtResource("1_nnsk1")
+
+[node name="Cube" type="MeshInstance3D" parent="." unique_id=1150748703]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0, 0)
+mesh = SubResource("BoxMesh_mf55y")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1384167276]
+transform = Transform3D(1, 0, 0, 0, 0.90630776, 0.42261827, 0, -0.42261827, 0.90630776, 0, 1, 2)
+
+[node name="Environment" type="Node" parent="." unique_id=1386159910]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Environment" unique_id=211479344]
+transform = Transform3D(0.7122949, -0.3642785, 0.59994763, -0.16394451, 0.7447768, 0.6468615, -0.6824648, -0.5591143, 0.47077918, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=1761383508]
+environment = SubResource("Environment_f1vde")
+camera_attributes = SubResource("CameraAttributesPractical_vi7ne")
