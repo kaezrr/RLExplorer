@@ -1,7 +1,7 @@
 extends Node3D
 
 @onready var grid_map: GridMap = $GridMap
-@onready var agent: MeshInstance3D = $Agent
+@onready var agent: GridAgent = $Agent
 @onready var camera: Camera3D = $Camera3D
 
 @export var MAP_SEED := 42
@@ -32,7 +32,11 @@ func _ready() -> void:
 
 	var start_position := find_agent_start(grid)
 
-	agent.position = grid_renderer.grid_to_world(start_position)
+	agent.setup(
+		start_position,
+		grid,
+		grid_renderer
+	)
 
 	position_camera(GridWorld.GRID_SIZE)
 
@@ -47,3 +51,34 @@ func find_agent_start(grid: Array) -> Vector2i:
 				return Vector2i(x, y)
 
 	return Vector2i.ZERO
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+
+		match event.keycode:
+			KEY_W:
+				test_agent_move(GridAgent.Action.UP)
+
+			KEY_S:
+				test_agent_move(GridAgent.Action.DOWN)
+
+			KEY_A:
+				test_agent_move(GridAgent.Action.LEFT)
+
+			KEY_D:
+				test_agent_move(GridAgent.Action.RIGHT)
+
+
+func test_agent_move(action: int) -> void:
+	var result := agent.try_move(action)
+
+	print(
+		"Action: ",
+		action,
+		" | Position: ",
+		result.position,
+		" | Blocked: ",
+		result.blocked,
+		" | Collected: ",
+		result.collected
+	)
