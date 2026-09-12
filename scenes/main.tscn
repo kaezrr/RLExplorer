@@ -22,7 +22,6 @@ sky = SubResource("Sky_vi7ne")
 
 [node name="Main" type="Node3D" unique_id=341774346]
 script = ExtResource("1_0wfyh")
-MAP_SEED = 129837
 
 [node name="GridMap" type="GridMap" parent="." unique_id=235537360]
 mesh_library = ExtResource("1_o5qli")

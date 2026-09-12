@@ -29,16 +29,15 @@ func _ready() -> void:
 	var grid := grid_world.generate_map(MAP_SEED)
 
 	grid_renderer.render_grid(grid, grid_map)
-	
+
 	var start_position := find_agent_start(grid)
 
 	agent.position = grid_renderer.grid_to_world(start_position)
-	
+
 	position_camera(GridWorld.GRID_SIZE)
 
 	print("Generated map with seed ", MAP_SEED)
 	grid_world.print_map(grid)
-	
 
 
 func find_agent_start(grid: Array) -> Vector2i:
