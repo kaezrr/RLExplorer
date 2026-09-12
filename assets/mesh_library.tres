@@ -1,0 +1,55 @@
+[gd_resource type="MeshLibrary" format=3 uid="uid://tkktuvvgibxh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sugp2"]
+albedo_color = Color(0, 0.205241, 0.4321288, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0wfyh"]
+material = SubResource("StandardMaterial3D_sugp2")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xys1o"]
+albedo_color = Color(0.627451, 0.078431375, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_u3a26"]
+material = SubResource("StandardMaterial3D_xys1o")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fvsps"]
+albedo_color = Color(1, 0.7607843, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_urw11"]
+material = SubResource("StandardMaterial3D_fvsps")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ud604"]
+albedo_color = Color(2.695322e-06, 0.8178106, 0.82185715, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fmbwf"]
+material = SubResource("StandardMaterial3D_ud604")
+
+[resource]
+item/0/name = "FloorLight"
+item/0/mesh = SubResource("BoxMesh_0wfyh")
+item/0/mesh_transform = Transform3D(1, 0, 0, 0, 0.1, 0, 0, 0, 1, 0, 0, 0)
+item/0/mesh_cast_shadow = 1
+item/0/shapes = []
+item/0/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/navigation_layers = 1
+item/1/name = "Obstacle"
+item/1/mesh = SubResource("BoxMesh_u3a26")
+item/1/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/mesh_cast_shadow = 1
+item/1/shapes = []
+item/1/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/navigation_layers = 1
+item/2/name = "Collectible"
+item/2/mesh = SubResource("SphereMesh_urw11")
+item/2/mesh_transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+item/2/mesh_cast_shadow = 1
+item/2/shapes = []
+item/2/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/2/navigation_layers = 1
+item/3/name = "FloorDark"
+item/3/mesh = SubResource("BoxMesh_fmbwf")
+item/3/mesh_transform = Transform3D(1, 0, 0, 0, 0.1, 0, 0, 0, 1, 0, 0, 0)
+item/3/mesh_cast_shadow = 1
+item/3/shapes = []
+item/3/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/3/navigation_layers = 1

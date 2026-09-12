@@ -12,7 +12,7 @@ const MIN_COLLECTIBLES := 5
 const MAX_COLLECTIBLES := 8
 const OBSTACLE_DENSITY := 0.18
 
-@export var MAP_SEED := 42
+
 
 
 func generate_map(map_seed: int) -> Array:
@@ -95,12 +95,3 @@ func print_map(grid: Array) -> void:
 		print(line)
 
 	print("==============================")
-	
-
-func _ready() -> void:
-	var grid_a := generate_map(MAP_SEED)
-	var grid_b := generate_map(MAP_SEED)
-
-	print_map(grid_a)
-
-	print("Same seed produces identical map: ", grid_a == grid_b)

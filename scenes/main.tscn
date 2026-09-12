@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://di0ey0wvndhmh"]
+
+[ext_resource type="Script" uid="uid://dh4ae2ergthvf" path="res://scripts/main.gd" id="1_0wfyh"]
+[ext_resource type="MeshLibrary" uid="uid://tkktuvvgibxh" path="res://assets/mesh_library.tres" id="1_o5qli"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f1vde"]
+albedo_color = Color(0.96862745, 0.09019608, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_mf55y"]
+material = SubResource("StandardMaterial3D_f1vde")
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_f1vde"]
+
+[sub_resource type="Sky" id="Sky_vi7ne"]
+sky_material = SubResource("ProceduralSkyMaterial_f1vde")
+
+[sub_resource type="Environment" id="Environment_mf55y"]
+background_mode = 2
+sky = SubResource("Sky_vi7ne")
+
+[node name="Main" type="Node3D" unique_id=341774346]
+script = ExtResource("1_0wfyh")
+MAP_SEED = 129837
+
+[node name="GridMap" type="GridMap" parent="." unique_id=235537360]
+mesh_library = ExtResource("1_o5qli")
+cell_size = Vector3(1, 1, 1)
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1482140052]
+transform = Transform3D(1, 0, 0, 0, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, -0.62059593, -4.407463, 10)
+projection = 1
+current = true
+
+[node name="Agent" type="MeshInstance3D" parent="." unique_id=1297832886]
+mesh = SubResource("CapsuleMesh_mf55y")
+
+[node name="Environment" type="Node" parent="." unique_id=1427445485]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=2090253812]
+environment = SubResource("Environment_mf55y")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Environment" unique_id=1456497802]
+transform = Transform3D(0.70710677, 0.49999997, -0.49999997, 0, 0.70710677, 0.70710677, 0.70710677, -0.49999997, 0.49999997, 0, 0, 0)
+shadow_enabled = true
