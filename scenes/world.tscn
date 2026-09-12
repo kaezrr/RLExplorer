@@ -4,6 +4,11 @@
 
 [sub_resource type="BoxMesh" id="BoxMesh_mf55y"]
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_mf55y"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vi7ne"]
+albedo_color = Color(0.078431375, 0, 0.17254902, 1)
+
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rwgxs"]
 
 [sub_resource type="Sky" id="Sky_nnsk1"]
@@ -17,13 +22,19 @@ sky = SubResource("Sky_nnsk1")
 
 [node name="Root" type="Node3D" unique_id=786286093]
 script = ExtResource("1_nnsk1")
+MAP_SEED = 43
 
 [node name="Cube" type="MeshInstance3D" parent="." unique_id=1150748703]
-transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0, 0)
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0.5, 0)
 mesh = SubResource("BoxMesh_mf55y")
 
+[node name="Plane" type="MeshInstance3D" parent="." unique_id=53503023]
+transform = Transform3D(7.078139, 0, 7.078139, 0, 10.01, 0, -7.078139, 0, 7.078139, 0, 0, 0)
+mesh = SubResource("PlaneMesh_mf55y")
+surface_material_override/0 = SubResource("StandardMaterial3D_vi7ne")
+
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1384167276]
-transform = Transform3D(1, 0, 0, 0, 0.90630776, 0.42261827, 0, -0.42261827, 0.90630776, 0, 1, 2)
+transform = Transform3D(0.9981348, -0.02676184, 0.0548699, 0, 0.89879405, 0.43837115, -0.06104836, -0.4375535, 0.8971176, 0, 1, 2)
 
 [node name="Environment" type="Node" parent="." unique_id=1386159910]
 
