@@ -23,18 +23,6 @@ sky = SubResource("Sky_vi7ne")
 
 [node name="Main" type="Node3D" unique_id=341774346]
 script = ExtResource("1_0wfyh")
-MAP_SEED = null
-training_episodes = null
-alpha = null
-gamma = null
-epsilon_start = null
-epsilon_end = null
-epsilon_decay = null
-save_q_table_after_training = null
-load_trained_q_table = null
-visual_episode_interval = null
-visual_training_step_delay = null
-playback_step_delay = null
 
 [node name="GridMap" type="GridMap" parent="." unique_id=235537360]
 mesh_library = ExtResource("1_o5qli")
