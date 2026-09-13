@@ -37,11 +37,14 @@ func _ready() -> void:
 		grid,
 		grid_renderer
 	)
+	
+	print("Initial agent state: ", agent.get_state_key())
 
 	position_camera(GridWorld.GRID_SIZE)
 
 	print("Generated map with seed ", MAP_SEED)
 	grid_world.print_map(grid)
+	
 
 
 func find_agent_start(grid: Array) -> Vector2i:
@@ -80,5 +83,14 @@ func test_agent_move(action: int) -> void:
 		" | Blocked: ",
 		result.blocked,
 		" | Collected: ",
-		result.collected
+		result.collected,
+		" | Completed: ",
+		result.completed,
+		" | Reward: ",
+		result.reward
+	)
+
+	print(
+		"New state: ",
+		agent.get_state_key()
 	)
