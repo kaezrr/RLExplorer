@@ -8,6 +8,7 @@ extends Node3D
 
 var grid_world: GridWorld
 var grid_renderer: GridRenderer
+var q_learning: QLearning
 
 func position_camera(grid_size: int) -> void:
 	var center := Vector3(grid_size / 2.0, 0, grid_size / 2.0)
@@ -22,6 +23,7 @@ func position_camera(grid_size: int) -> void:
 func _ready() -> void:
 	grid_world = GridWorld.new()
 	grid_renderer = GridRenderer.new()
+	q_learning = QLearning.new()
 
 	add_child(grid_world)
 	add_child(grid_renderer)
@@ -42,8 +44,8 @@ func _ready() -> void:
 
 	position_camera(GridWorld.GRID_SIZE)
 
-	print("Generated map with seed ", MAP_SEED)
-	grid_world.print_map(grid)
+	#print("Generated map with seed ", MAP_SEED)
+	#grid_world.print_map(grid)
 	
 
 
