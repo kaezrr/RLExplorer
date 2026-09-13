@@ -1,11 +1,9 @@
 extends RefCounted
 class_name QLearning
 
-
 const ACTION_COUNT = 4
 
 var q_table: Dictionary = {}
-
 var rng := RandomNumberGenerator.new()
 
 
@@ -21,11 +19,9 @@ func ensure_state(state_key: String) -> void:
 func get_action(state_key: String, epsilon: float) -> int:
 	ensure_state(state_key)
 
-	# Exploration
 	if rng.randf() < epsilon:
 		return rng.randi_range(0, ACTION_COUNT - 1)
 
-	# Exploitation
 	var q_values: Array = q_table[state_key]
 
 	var best_action := 0
@@ -60,9 +56,71 @@ func update(
 			best_next_q = next_q
 
 	var td_target: float = reward + gamma * best_next_q
-
 	var td_error: float = td_target - q_values[action]
 
 	q_values[action] += alpha * td_error
 
 	q_table[state_key] = q_values
+
+
+func save_q_table(path: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+
+	if file == null:
+		print("Failed to open Q-table for writing: ", path)
+		return false
+
+	var json_text := JSON.stringify(q_table)
+	file.store_string(json_text)
+	file.close()
+
+	print("Q-table saved: ", path)
+	print("Q-table states saved: ", q_table.size())
+
+	return true
+
+
+func load_q_table(path: String) -> bool:
+	if not FileAccess.file_exists(path):
+		print("Q-table file does not exist: ", path)
+		return false
+
+	var file := FileAccess.open(path, FileAccess.READ)
+
+	if file == null:
+		print("Failed to open Q-table for reading: ", path)
+		return false
+
+	var json_text := file.get_as_text()
+	file.close()
+
+	var json := JSON.new()
+	var parse_error := json.parse(json_text)
+
+	if parse_error != OK:
+		print("Failed to parse Q-table JSON: ", json.get_error_message())
+		return false
+
+	if not json.data is Dictionary:
+		print("Invalid Q-table format: expected Dictionary.")
+		return false
+
+	var loaded_table: Dictionary = json.data
+
+	for state_key in loaded_table:
+		var q_values = loaded_table[state_key]
+
+		if not q_values is Array:
+			print("Invalid Q-table state: ", state_key)
+			return false
+
+		if q_values.size() != ACTION_COUNT:
+			print("Invalid Q-values for state: ", state_key)
+			return false
+
+	q_table = loaded_table
+
+	print("Q-table loaded: ", path)
+	print("Q-table states loaded: ", q_table.size())
+
+	return true
