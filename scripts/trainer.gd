@@ -114,6 +114,78 @@ func run_episode(
 	return total_reward
 
 
+func evaluate_test_maps() -> Array[Dictionary]:
+	var evaluation_results: Array[Dictionary] = []
+
+	print("")
+	print("Starting held-out evaluation")
+	print("Evaluation seeds: ", TEST_SEEDS)
+	print("Evaluation epsilon: 0.0")
+	print("Q-table updates: disabled")
+	print("")
+
+	for test_seed in TEST_SEEDS:
+		var result := evaluate_single_map(test_seed)
+		evaluation_results.append(result)
+
+		print(
+			"Evaluation | Seed: ",
+			test_seed,
+			" | Reward: ",
+			result["reward"],
+			" | Steps: ",
+			result["steps"],
+			" | Completed: ",
+			result["completed"]
+		)
+
+	print("")
+	print("Held-out evaluation complete")
+	print("")
+
+	return evaluation_results
+
+
+func evaluate_single_map(map_seed: int) -> Dictionary:
+	var grid := grid_world.generate_map(map_seed)
+	var start_position := grid_world.find_agent_start(grid)
+
+	agent.setup(start_position, grid, agent.grid_renderer)
+
+	var total_reward := 0.0
+	var steps_taken := 0
+	var completed := false
+
+	# epsilon = 0.0 means purely greedy evaluation.
+	# No Q-learning update is performed here.
+	for step in range(max_steps):
+		var state_key := agent.get_state_key()
+
+		var action := q_learning.get_action(
+			state_key,
+			0.0
+		)
+
+		var result: Dictionary = agent.try_move(action)
+
+		total_reward += float(result["reward"])
+		steps_taken += 1
+
+		if result["completed"]:
+			completed = true
+			break
+
+	var remaining_collectibles := agent.get_collectible_count()
+
+	return {
+		"seed": map_seed,
+		"reward": total_reward,
+		"steps": steps_taken,
+		"completed": completed,
+		"remaining_collectibles": remaining_collectibles
+	}
+
+
 func save_training_log(path: String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 

@@ -58,13 +58,9 @@ func _ready() -> void:
 
 
 func run_configured_training() -> void:
-	var trainer := Trainer.new(
-		q_learning,
-		agent,
-		grid_world
-	)
+	var trainer := Trainer.new(q_learning, agent, grid_world)
 
-	print("========================================")
+	print("")
 	print("Starting configured training")
 	print("Episodes: ", training_episodes)
 	print("Training seeds: ", trainer.training_seeds)
@@ -73,7 +69,7 @@ func run_configured_training() -> void:
 	print("Epsilon start: ", epsilon_start)
 	print("Epsilon end: ", epsilon_end)
 	print("Epsilon decay: ", epsilon_decay)
-	print("========================================")
+	print("")
 
 	var rewards := trainer.run_training(
 		training_episodes,
@@ -85,16 +81,35 @@ func run_configured_training() -> void:
 	)
 
 	var log_saved := trainer.save_training_log(
-        "res://data/training_log.json"
+		"res://data/training_log.json"
 	)
 
-	print("========================================")
+	print("")
 	print("Training complete")
 	print("Episodes completed: ", rewards.size())
 	print("Q-table states learned: ", q_learning.q_table.size())
 	print("Training log save successful: ", log_saved)
-	print("========================================")
+	print("")
 
+	var evaluation_results := trainer.evaluate_test_maps()
+
+	print("HELD-OUT EVALUATION RESULTS")
+
+	for result in evaluation_results:
+		print(
+			"Seed: ",
+			result["seed"],
+			" | Reward: ",
+			result["reward"],
+			" | Steps: ",
+			result["steps"],
+			" | Completed: ",
+			result["completed"],
+			" | Remaining collectibles: ",
+			result["remaining_collectibles"]
+		)
+
+	print("")
 
 func find_agent_start(grid: Array) -> Vector2i:
 	for y in range(grid.size()):
