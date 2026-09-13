@@ -9,7 +9,6 @@ extends Node3D
 var grid_world: GridWorld
 var grid_renderer: GridRenderer
 var q_learning: QLearning
-var trainer: Trainer
 
 func position_camera(grid_size: int) -> void:
 	var center := Vector3(grid_size / 2.0, 0, grid_size / 2.0)
@@ -30,37 +29,14 @@ func _ready() -> void:
 	add_child(grid_renderer)
 
 	var grid := grid_world.generate_map(MAP_SEED)
-
 	grid_renderer.render_grid(grid, grid_map)
 
 	var start_position := find_agent_start(grid)
+	agent.setup(start_position, grid, grid_renderer)
 
-	agent.setup(
-		start_position,
-		grid,
-		grid_renderer
-	)
-
-	trainer = Trainer.new(
-		q_learning,
-		agent,
-		grid_world
-	)
-	
-	var rewards := trainer.run_training(
-		500,
-		0.1,
-		0.9,
-		1.0,
-		0.05,
-		0.995
-	)
-
-	print("Training test rewards: ", rewards)
-	print("Q-table states learned: ", q_learning.q_table.size())
 	print("Initial agent state: ", agent.get_state_key())
-
 	position_camera(GridWorld.GRID_SIZE)
+	
 
 	#print("Generated map with seed ", MAP_SEED)
 	#grid_world.print_map(grid)
