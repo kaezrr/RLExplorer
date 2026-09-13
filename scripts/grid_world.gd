@@ -30,14 +30,6 @@ func generate_map(map_seed: int) -> Array:
 			grid,
 			start_position
 		):
-			print(
-				"Valid map generated with seed ",
-				current_seed,
-				" after ",
-				attempt + 1,
-				" attempt(s)."
-			)
-
 			return grid
 
 		current_seed += 1
