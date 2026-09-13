@@ -1,28 +1,24 @@
 extends Node3D
 class_name GridAgent
 
-
 enum Action {
 	UP,
 	DOWN,
 	LEFT,
-	RIGHT
+	RIGHT,
 }
-
 
 const EMPTY := 0
 const OBSTACLE := 1
 const COLLECTIBLE := 2
 const AGENT_START := 3
 
-
 const DIRECTIONS := {
 	Action.UP: Vector2i(0, -1),
 	Action.DOWN: Vector2i(0, 1),
 	Action.LEFT: Vector2i(-1, 0),
-	Action.RIGHT: Vector2i(1, 0)
+	Action.RIGHT: Vector2i(1, 0),
 }
-
 
 # --------------------------------------------------
 # Goal-direction encoding.
@@ -37,12 +33,10 @@ const DIRECTIONS := {
 
 const GOAL_DIR_NONE := 4
 
-
 const STEP_REWARD := -0.1
 const BLOCKED_REWARD := -2.0
 const COLLECTIBLE_REWARD := 10.0
 const ALL_COLLECTIBLES_BONUS := 50.0
-
 
 # --------------------------------------------------
 # Visual movement settings.
@@ -53,7 +47,6 @@ const ALL_COLLECTIBLES_BONUS := 50.0
 
 var visual_target_position := Vector3.ZERO
 var visual_position_initialized := false
-
 
 # --------------------------------------------------
 # Agent state.
@@ -87,18 +80,10 @@ func _process(delta: float) -> void:
 
 	# Move the visual agent smoothly toward the
 	# logical grid position.
-	position = position.move_toward(
-		visual_target_position,
-		movement_speed * delta
-	)
+	position = position.move_toward(visual_target_position, movement_speed * delta)
 
 
-func setup(
-	start_position: Vector2i,
-	world_grid: Array,
-	renderer: GridRenderer
-) -> void:
-
+func setup(start_position: Vector2i, world_grid: Array, renderer: GridRenderer) -> void:
 	grid_position = start_position
 	grid_data = world_grid
 	grid_renderer = renderer
@@ -108,9 +93,7 @@ func setup(
 
 	# Reset the visual position immediately when
 	# starting a new map/episode.
-	var start_world_position := grid_renderer.grid_to_world(
-		grid_position
-	)
+	var start_world_position := grid_renderer.grid_to_world(grid_position)
 
 	position = start_world_position
 	visual_target_position = start_world_position
@@ -118,11 +101,9 @@ func setup(
 
 
 func try_move(action: int) -> Dictionary:
-
 	# --------------------------------------------------
 	# Invalid action.
 	# --------------------------------------------------
-
 	if not DIRECTIONS.has(action):
 		return {
 			"success": false,
@@ -130,7 +111,7 @@ func try_move(action: int) -> Dictionary:
 			"collected": false,
 			"completed": false,
 			"reward": BLOCKED_REWARD,
-			"position": grid_position
+			"position": grid_position,
 		}
 
 	# Record the attempted action before resolving it, so the next
@@ -142,11 +123,9 @@ func try_move(action: int) -> Dictionary:
 
 	var target_position := grid_position + direction
 
-
 	# --------------------------------------------------
 	# Off-grid movement.
 	# --------------------------------------------------
-
 	if not is_inside_grid(target_position):
 		return {
 			"success": false,
@@ -154,14 +133,12 @@ func try_move(action: int) -> Dictionary:
 			"collected": false,
 			"completed": false,
 			"reward": BLOCKED_REWARD,
-			"position": grid_position
+			"position": grid_position,
 		}
-
 
 	# --------------------------------------------------
 	# Obstacle collision.
 	# --------------------------------------------------
-
 	if grid_data[target_position.y][target_position.x] == OBSTACLE:
 		return {
 			"success": false,
@@ -169,9 +146,8 @@ func try_move(action: int) -> Dictionary:
 			"collected": false,
 			"completed": false,
 			"reward": BLOCKED_REWARD,
-			"position": grid_position
+			"position": grid_position,
 		}
-
 
 	# --------------------------------------------------
 	# Logical movement.
@@ -181,35 +157,26 @@ func try_move(action: int) -> Dictionary:
 	# immediately. Only the visual representation moves
 	# smoothly.
 	# --------------------------------------------------
-
 	grid_position = target_position
 
-
 	var collected := false
-
 
 	if grid_data[grid_position.y][grid_position.x] == COLLECTIBLE:
 		grid_data[grid_position.y][grid_position.x] = EMPTY
 		collected = true
 
-
 	# --------------------------------------------------
 	# Check whether every collectible has been collected.
 	# --------------------------------------------------
-
 	var completed := get_collectible_count() == 0
 
-
 	var reward := STEP_REWARD
-
 
 	if collected:
 		reward += COLLECTIBLE_REWARD
 
-
 	if completed:
 		reward += ALL_COLLECTIBLES_BONUS
-
 
 	# --------------------------------------------------
 	# Update the visual target.
@@ -217,9 +184,7 @@ func try_move(action: int) -> Dictionary:
 	# The agent does NOT snap to the new position here.
 	# _process() moves it smoothly.
 	# --------------------------------------------------
-
 	update_visual_position()
-
 
 	return {
 		"success": true,
@@ -227,12 +192,11 @@ func try_move(action: int) -> Dictionary:
 		"collected": collected,
 		"completed": completed,
 		"reward": reward,
-		"position": grid_position
+		"position": grid_position,
 	}
 
 
 func is_inside_grid(world_position: Vector2i) -> bool:
-
 	if world_position.y < 0:
 		return false
 
@@ -249,13 +213,10 @@ func is_inside_grid(world_position: Vector2i) -> bool:
 
 
 func update_visual_position() -> void:
-
 	if grid_renderer == null:
 		return
 
-	visual_target_position = grid_renderer.grid_to_world(
-		grid_position
-	)
+	visual_target_position = grid_renderer.grid_to_world(grid_position)
 
 	# If smoothing is disabled, immediately place the agent.
 	if not smooth_movement:
@@ -263,22 +224,13 @@ func update_visual_position() -> void:
 
 
 func get_state_key() -> String:
+	var up_type := get_adjacent_cell_type(grid_position + Vector2i.UP)
 
-	var up_type := get_adjacent_cell_type(
-		grid_position + Vector2i.UP
-	)
+	var down_type := get_adjacent_cell_type(grid_position + Vector2i.DOWN)
 
-	var down_type := get_adjacent_cell_type(
-		grid_position + Vector2i.DOWN
-	)
+	var left_type := get_adjacent_cell_type(grid_position + Vector2i.LEFT)
 
-	var left_type := get_adjacent_cell_type(
-		grid_position + Vector2i.LEFT
-	)
-
-	var right_type := get_adjacent_cell_type(
-		grid_position + Vector2i.RIGHT
-	)
+	var right_type := get_adjacent_cell_type(grid_position + Vector2i.RIGHT)
 
 	var goal_direction := get_goal_direction()
 
@@ -286,21 +238,17 @@ func get_state_key() -> String:
 	# so it can sit cleanly in the state string.
 	var prev_action_component := last_action + 1
 
-
 	return "%d,%d,%d,%d,%d,%d" % [
 		up_type,
 		down_type,
 		left_type,
 		right_type,
 		goal_direction,
-		prev_action_component
+		prev_action_component,
 	]
 
 
-func get_adjacent_cell_type(
-	position_to_check: Vector2i
-) -> int:
-
+func get_adjacent_cell_type(position_to_check: Vector2i) -> int:
 	# Outside the grid is treated exactly like an obstacle.
 	if not is_inside_grid(position_to_check):
 		return 1
@@ -310,7 +258,6 @@ func get_adjacent_cell_type(
 		return 1
 
 	return 0
-
 
 # --------------------------------------------------
 # Obstacle-aware goal direction.
@@ -330,16 +277,13 @@ func get_adjacent_cell_type(
 # actual walkable path.
 # --------------------------------------------------
 
-func get_goal_direction() -> int:
 
-	var visited := {}
+func get_goal_direction() -> int:
+	var visited := { }
 	var queue: Array = []
 
 	visited[grid_position] = true
-	queue.append({
-		"pos": grid_position,
-		"first_action": -1
-	})
+	queue.append({ "pos": grid_position, "first_action": -1 })
 
 	while not queue.is_empty():
 		var current: Dictionary = queue.pop_front()
@@ -372,10 +316,7 @@ func get_goal_direction() -> int:
 			if next_first_action == -1:
 				next_first_action = action
 
-			queue.append({
-				"pos": next_pos,
-				"first_action": next_first_action
-			})
+			queue.append({ "pos": next_pos, "first_action": next_first_action })
 
 	# No reachable collectible left (shouldn't normally happen
 	# mid-episode on a validated map, but covered defensively).
@@ -383,15 +324,11 @@ func get_goal_direction() -> int:
 
 
 func get_collectible_count() -> int:
-
 	var count := 0
-
 
 	for y in range(grid_data.size()):
 		for x in range(grid_data[y].size()):
-
 			if grid_data[y][x] == COLLECTIBLE:
 				count += 1
-
 
 	return count

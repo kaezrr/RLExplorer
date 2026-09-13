@@ -18,11 +18,7 @@ const TEST_SEEDS: Array[int] = [100, 101]
 var max_steps: int = 150
 
 
-func _init(
-	q_learning_system: QLearning,
-	agent_system: GridAgent,
-	grid_world_system: GridWorld
-) -> void:
+func _init(q_learning_system: QLearning, agent_system: GridAgent, grid_world_system: GridWorld) -> void:
 	q_learning = q_learning_system
 	agent = agent_system
 	grid_world = grid_world_system
@@ -36,7 +32,7 @@ func run_training(
 	epsilon_end: float,
 	epsilon_decay: float,
 	visual_interval: int = 50,
-	visual_callback: Callable = Callable()
+	visual_callback: Callable = Callable(),
 ) -> Array[float]:
 	episode_rewards.clear()
 
@@ -47,12 +43,7 @@ func run_training(
 		# Cycle through the 8 training maps in round-robin order.
 		var training_seed: int = training_seeds[episode % training_seeds.size()]
 
-		var total_reward := run_episode(
-			training_seed,
-			alpha,
-			gamma,
-			epsilon
-		)
+		var total_reward := run_episode(training_seed, alpha, gamma, epsilon)
 
 		episode_rewards.append(total_reward)
 
@@ -61,8 +52,7 @@ func run_training(
 		# Only refresh the visible world periodically.
 		# The actual Q-learning still runs every episode.
 		var show_snapshot := (
-			(episode + 1) % safe_visual_interval == 0
-			or episode == num_episodes - 1
+			(episode + 1) % safe_visual_interval == 0 or episode == num_episodes - 1
 		)
 
 		if show_snapshot:
@@ -75,7 +65,7 @@ func run_training(
 						"reward": total_reward,
 						"epsilon": epsilon,
 						"remaining_collectibles": agent.get_collectible_count(),
-						"position": agent.grid_position
+						"position": agent.grid_position,
 					}
 				)
 
@@ -97,17 +87,13 @@ func run_training(
 				" | Remaining: ",
 				agent.get_collectible_count(),
 				" | Position: ",
-				agent.grid_position
+				agent.grid_position,
 			)
 
 	return episode_rewards
 
-func run_episode(
-	map_seed: int,
-	alpha: float,
-	gamma: float,
-	epsilon: float
-) -> float:
+
+func run_episode(map_seed: int, alpha: float, gamma: float, epsilon: float) -> float:
 	var grid := grid_world.generate_map(map_seed)
 	var start_position := grid_world.find_agent_start(grid)
 
@@ -118,24 +104,14 @@ func run_episode(
 	for step in range(max_steps):
 		var state_key := agent.get_state_key()
 
-		var action := q_learning.get_action(
-			state_key,
-			epsilon
-		)
+		var action := q_learning.get_action(state_key, epsilon)
 
 		var result: Dictionary = agent.try_move(action)
 
 		var reward: float = result.reward
 		var next_state_key := agent.get_state_key()
 
-		q_learning.update(
-			state_key,
-			action,
-			reward,
-			next_state_key,
-			alpha,
-			gamma
-		)
+		q_learning.update(state_key, action, reward, next_state_key, alpha, gamma)
 
 		total_reward += reward
 
@@ -167,7 +143,7 @@ func evaluate_test_maps() -> Array[Dictionary]:
 			" | Steps: ",
 			result["steps"],
 			" | Completed: ",
-			result["completed"]
+			result["completed"],
 		)
 
 	print("")
@@ -192,10 +168,7 @@ func evaluate_single_map(map_seed: int) -> Dictionary:
 	for step in range(max_steps):
 		var state_key := agent.get_state_key()
 
-		var action := q_learning.get_action(
-			state_key,
-			0.0
-		)
+		var action := q_learning.get_action(state_key, 0.0)
 
 		var result: Dictionary = agent.try_move(action)
 
@@ -213,7 +186,7 @@ func evaluate_single_map(map_seed: int) -> Dictionary:
 		"reward": total_reward,
 		"steps": steps_taken,
 		"completed": completed,
-		"remaining_collectibles": remaining_collectibles
+		"remaining_collectibles": remaining_collectibles,
 	}
 
 

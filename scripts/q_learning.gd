@@ -9,7 +9,7 @@ const ACTION_COUNT = 4
 # encoding would silently mix up unrelated states and actions.
 const STATE_FORMAT_VERSION := 2
 
-var q_table: Dictionary = {}
+var q_table: Dictionary = { }
 var rng := RandomNumberGenerator.new()
 
 
@@ -47,7 +47,7 @@ func update(
 	reward: float,
 	next_state_key: String,
 	alpha: float,
-	gamma: float
+	gamma: float,
 ) -> void:
 	ensure_state(state_key)
 	ensure_state(next_state_key)
@@ -76,10 +76,7 @@ func save_q_table(path: String) -> bool:
 		print("Failed to open Q-table for writing: ", path)
 		return false
 
-	var payload := {
-		"version": STATE_FORMAT_VERSION,
-		"q_table": q_table
-	}
+	var payload := { "version": STATE_FORMAT_VERSION, "q_table": q_table }
 
 	var json_text := JSON.stringify(payload)
 	file.store_string(json_text)
@@ -135,7 +132,7 @@ func load_q_table(path: String) -> bool:
 			payload["version"],
 			", current encoding is version ",
 			STATE_FORMAT_VERSION,
-			"."
+			".",
 		)
 		print("Please retrain (press T) to generate a new Q-table.")
 		return false
