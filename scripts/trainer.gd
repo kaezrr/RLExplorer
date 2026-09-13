@@ -34,11 +34,14 @@ func run_training(
 	gamma: float,
 	epsilon_start: float,
 	epsilon_end: float,
-	epsilon_decay: float
+	epsilon_decay: float,
+	visual_interval: int = 50,
+	visual_callback: Callable = Callable()
 ) -> Array[float]:
 	episode_rewards.clear()
 
 	var epsilon := epsilon_start
+	var safe_visual_interval: int = max(1, visual_interval)
 
 	for episode in range(num_episodes):
 		# Cycle through the 8 training maps in round-robin order.
@@ -55,21 +58,49 @@ func run_training(
 
 		epsilon = max(epsilon_end, epsilon * epsilon_decay)
 
-		print(
-			"Episode ",
-			episode + 1,
-			"/",
-			num_episodes,
-			" | Seed: ",
-			training_seed,
-			" | Reward: ",
-			total_reward,
-			" | Epsilon: ",
-			epsilon
+		# Only refresh the visible world periodically.
+		# The actual Q-learning still runs every episode.
+		var show_snapshot := (
+			(episode + 1) % safe_visual_interval == 0
+			or episode == num_episodes - 1
 		)
 
-	return episode_rewards
+		if show_snapshot:
+			if visual_callback.is_valid():
+				visual_callback.call(
+					{
+						"episode": episode + 1,
+						"total_episodes": num_episodes,
+						"seed": training_seed,
+						"reward": total_reward,
+						"epsilon": epsilon,
+						"remaining_collectibles": agent.get_collectible_count(),
+						"position": agent.grid_position
+					}
+				)
 
+			# Give Godot one frame to display this snapshot before
+			# the next batch of 50 episodes runs.
+			await agent.get_tree().process_frame
+
+			print(
+				"Training | Episode ",
+				episode + 1,
+				"/",
+				num_episodes,
+				" | Seed: ",
+				training_seed,
+				" | Reward: ",
+				total_reward,
+				" | Epsilon: ",
+				epsilon,
+				" | Remaining: ",
+				agent.get_collectible_count(),
+				" | Position: ",
+				agent.grid_position
+			)
+
+	return episode_rewards
 
 func run_episode(
 	map_seed: int,

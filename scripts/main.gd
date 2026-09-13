@@ -35,6 +35,17 @@ extends Node3D
 
 
 # --------------------------------------------------
+# Accelerated visual training
+# --------------------------------------------------
+
+# Training still runs every episode, but the visible
+# map is refreshed only every N episodes.
+# This makes training feel fast while still letting
+# you see the agent's current learned behaviour.
+@export var visual_training_interval := 50
+
+
+# --------------------------------------------------
 # Q-table
 # --------------------------------------------------
 
@@ -323,41 +334,39 @@ func run_configured_training() -> void:
 
 
 	training_in_progress = true
-
+	playback_running = false
+	playback_mode = PlaybackMode.MANUAL
 
 	print("")
 	print("==========================================")
-	print("STARTING TRAINING")
+	print("STARTING ACCELERATED VISUAL TRAINING")
 	print("==========================================")
 	print("Episodes: ", training_episodes)
-	print(
-		"Training seeds: ",
-		trainer.training_seeds
-	)
+	print("Training seeds: ", trainer.training_seeds)
 	print("Alpha: ", alpha)
 	print("Gamma: ", gamma)
-	print(
-		"Epsilon start: ",
-		epsilon_start
-	)
-	print(
-		"Epsilon end: ",
-		epsilon_end
-	)
-	print(
-		"Epsilon decay: ",
-		epsilon_decay
-	)
+	print("Epsilon start: ", epsilon_start)
+	print("Epsilon end: ", epsilon_end)
+	print("Epsilon decay: ", epsilon_decay)
+	print("Visual map refresh: every ", visual_training_interval, " episodes")
+	print("")
+	print("The agent is training rapidly between visual snapshots.")
+	print("P / R / M / N are disabled until training finishes.")
 	print("")
 
-
-	var rewards := trainer.run_training(
+	# run_training() still performs the exact same Q-learning
+	# update on every episode. The only difference is that
+	# every N episodes it gives Godot one frame to display
+	# the current training state.
+	var rewards := await trainer.run_training(
 		training_episodes,
 		alpha,
 		gamma,
 		epsilon_start,
 		epsilon_end,
-		epsilon_decay
+		epsilon_decay,
+		visual_training_interval,
+		Callable(self, "_on_training_snapshot")
 	)
 
 
@@ -367,7 +376,6 @@ func run_configured_training() -> void:
 
 
 	var q_table_saved := false
-
 
 	if save_q_table_after_training:
 
@@ -380,22 +388,10 @@ func run_configured_training() -> void:
 	print("==========================================")
 	print("TRAINING COMPLETE")
 	print("==========================================")
-	print(
-		"Episodes completed: ",
-		rewards.size()
-	)
-	print(
-		"Q-table states learned: ",
-		q_learning.q_table.size()
-	)
-	print(
-		"Training log save successful: ",
-		log_saved
-	)
-	print(
-		"Q-table save successful: ",
-		q_table_saved
-	)
+	print("Episodes completed: ", rewards.size())
+	print("Q-table states learned: ", q_learning.q_table.size())
+	print("Training log save successful: ", log_saved)
+	print("Q-table save successful: ", q_table_saved)
 	print("")
 
 
@@ -403,13 +399,9 @@ func run_configured_training() -> void:
 	# Held-out evaluation.
 	# --------------------------------------------------
 
-	var evaluation_results := (
-		trainer.evaluate_test_maps()
-	)
-
+	var evaluation_results := trainer.evaluate_test_maps()
 
 	print("HELD-OUT EVALUATION RESULTS")
-
 
 	for result in evaluation_results:
 
@@ -429,18 +421,56 @@ func run_configured_training() -> void:
 
 	print("")
 
-
 	training_in_progress = false
 
 
-	# --------------------------------------------------
-	# Restore the currently selected map.
-	# --------------------------------------------------
-
+	# Restore the map the user was viewing before training.
 	playback_mode = PlaybackMode.MANUAL
 
 	setup_demo_map(
 		MAP_SEED
+	)
+
+	print("")
+	print("Training finished.")
+	print("P = trained playback")
+	print("R = random playback")
+	print("M = manual control")
+	print("N = new random map")
+	print("")
+
+
+# --------------------------------------------------
+# Visual training snapshot
+# --------------------------------------------------
+
+func _on_training_snapshot(data: Dictionary) -> void:
+
+	# The Trainer has just finished an actual training
+	# episode. Its agent contains the final state of that
+	# episode, including any collectibles it removed.
+	# Render that state now so the player can see how the
+	# policy is behaving.
+	grid_renderer.render_grid(
+		agent.grid_data,
+		grid_map
+	)
+
+	print(
+		"Training snapshot | Episode ",
+		data["episode"],
+		"/",
+		data["total_episodes"],
+		" | Seed: ",
+		data["seed"],
+		" | Reward: ",
+		data["reward"],
+		" | Epsilon: ",
+		data["epsilon"],
+		" | Remaining: ",
+		data["remaining_collectibles"],
+		" | Agent position: ",
+		data["position"]
 	)
 
 
