@@ -24,14 +24,18 @@ const DIRECTIONS := {
 }
 
 
-const DIRECTION_N := 0
-const DIRECTION_NE := 1
-const DIRECTION_E := 2
-const DIRECTION_SE := 3
-const DIRECTION_S := 4
-const DIRECTION_SW := 5
-const DIRECTION_W := 6
-const DIRECTION_NW := 7
+# --------------------------------------------------
+# Goal-direction encoding.
+#
+# This is now the first *action* to take along the actual
+# (obstacle-aware) shortest path to the nearest reachable
+# collectible, computed via BFS - not a straight-line compass
+# bucket. It shares the same integer values as Action so that
+# "go UP" as a goal hint and Action.UP line up, plus one extra
+# value for "no path / nothing to collect".
+# --------------------------------------------------
+
+const GOAL_DIR_NONE := 4
 
 
 const STEP_REWARD := -0.1
@@ -58,6 +62,16 @@ var visual_position_initialized := false
 var grid_position := Vector2i.ZERO
 var grid_data: Array = []
 var grid_renderer: GridRenderer
+
+# Last action taken (or attempted, even if blocked).
+# -1 means "no previous action" (start of episode).
+#
+# This is folded into the state key so that arriving at a cell
+# fresh and arriving at it having just reversed out of it are
+# distinguishable states. Without this, two adjacent cells whose
+# greedy actions point at each other create an infinite,
+# undetectable back-and-forth loop once epsilon reaches 0.
+var last_action: int = -1
 
 
 func _ready() -> void:
@@ -89,6 +103,9 @@ func setup(
 	grid_data = world_grid
 	grid_renderer = renderer
 
+	# Reset per-episode memory.
+	last_action = -1
+
 	# Reset the visual position immediately when
 	# starting a new map/episode.
 	var start_world_position := grid_renderer.grid_to_world(
@@ -116,6 +133,10 @@ func try_move(action: int) -> Dictionary:
 			"position": grid_position
 		}
 
+	# Record the attempted action before resolving it, so the next
+	# state key reflects "just tried/took this direction" even if
+	# the move turns out to be blocked.
+	last_action = action
 
 	var direction: Vector2i = DIRECTIONS[action]
 
@@ -259,15 +280,20 @@ func get_state_key() -> String:
 		grid_position + Vector2i.RIGHT
 	)
 
-	var goal_direction := get_nearest_collectible_direction()
+	var goal_direction := get_goal_direction()
+
+	# Shift last_action (-1..3) to a non-negative range (0..4)
+	# so it can sit cleanly in the state string.
+	var prev_action_component := last_action + 1
 
 
-	return "%d,%d,%d,%d,%d" % [
+	return "%d,%d,%d,%d,%d,%d" % [
 		up_type,
 		down_type,
 		left_type,
 		right_type,
-		goal_direction
+		goal_direction,
+		prev_action_component
 	]
 
 
@@ -286,82 +312,74 @@ func get_adjacent_cell_type(
 	return 0
 
 
-func get_nearest_collectible_direction() -> int:
+# --------------------------------------------------
+# Obstacle-aware goal direction.
+#
+# Runs a breadth-first search out from the agent's current
+# position, respecting obstacles and grid bounds exactly like
+# Reachability.get_reachable_cells(). The first frontier cell
+# that is a collectible tells us the nearest *reachable*
+# collectible by actual path length (not straight-line
+# distance), and the direction of the very first step taken to
+# reach it (tracked alongside each queued cell) becomes the
+# goal-direction feature.
+#
+# This replaces the old Manhattan-distance compass bucket, which
+# could point straight through a wall whenever the nearest
+# collectible in a straight line wasn't the nearest one by an
+# actual walkable path.
+# --------------------------------------------------
 
-	var nearest_position := Vector2i.ZERO
-	var nearest_distance := INF
-	var found_collectible := false
+func get_goal_direction() -> int:
 
+	var visited := {}
+	var queue: Array = []
 
-	for y in range(grid_data.size()):
-		for x in range(grid_data[y].size()):
+	visited[grid_position] = true
+	queue.append({
+		"pos": grid_position,
+		"first_action": -1
+	})
 
-			if grid_data[y][x] != COLLECTIBLE:
+	while not queue.is_empty():
+		var current: Dictionary = queue.pop_front()
+		var current_pos: Vector2i = current["pos"]
+		var first_action: int = current["first_action"]
+
+		if grid_data[current_pos.y][current_pos.x] == COLLECTIBLE:
+			# The agent's own starting cell is never a collectible
+			# mid-episode (it would already have been collected),
+			# so first_action is guaranteed to be a real action here.
+			return first_action
+
+		for action in DIRECTIONS:
+			var direction: Vector2i = DIRECTIONS[action]
+			var next_pos: Vector2i = current_pos + direction
+
+			if not is_inside_grid(next_pos):
 				continue
 
-			var collectible_position := Vector2i(x, y)
+			if grid_data[next_pos.y][next_pos.x] == OBSTACLE:
+				continue
 
+			if visited.has(next_pos):
+				continue
 
-			var distance: float = (
-				abs(collectible_position.x - grid_position.x)
-				+ abs(collectible_position.y - grid_position.y)
-			)
+			visited[next_pos] = true
 
+			var next_first_action: int = first_action
 
-			if distance < nearest_distance:
-				nearest_distance = distance
-				nearest_position = collectible_position
-				found_collectible = true
+			if next_first_action == -1:
+				next_first_action = action
 
+			queue.append({
+				"pos": next_pos,
+				"first_action": next_first_action
+			})
 
-	if not found_collectible:
-		# This case should normally only occur at episode completion.
-		return DIRECTION_N
-
-
-	var dx := nearest_position.x - grid_position.x
-	var dy := nearest_position.y - grid_position.y
-
-
-	return get_direction_bucket(dx, dy)
-
-
-func get_direction_bucket(dx: int, dy: int) -> int:
-
-	var horizontal: int = sign(dx)
-	var vertical: int = sign(dy)
-
-
-	# Godot grid convention:
-	# y decreases when moving UP.
-
-	if horizontal == 0 and vertical < 0:
-		return DIRECTION_N
-
-	if horizontal > 0 and vertical < 0:
-		return DIRECTION_NE
-
-	if horizontal > 0 and vertical == 0:
-		return DIRECTION_E
-
-	if horizontal > 0 and vertical > 0:
-		return DIRECTION_SE
-
-	if horizontal == 0 and vertical > 0:
-		return DIRECTION_S
-
-	if horizontal < 0 and vertical > 0:
-		return DIRECTION_SW
-
-	if horizontal < 0 and vertical == 0:
-		return DIRECTION_W
-
-	if horizontal < 0 and vertical < 0:
-		return DIRECTION_NW
-
-
-	# No direction if dx == 0 and dy == 0.
-	return DIRECTION_N
+	# No reachable collectible left (shouldn't normally happen
+	# mid-episode on a validated map, but covered defensively).
+	return GOAL_DIR_NONE
 
 
 func get_collectible_count() -> int:

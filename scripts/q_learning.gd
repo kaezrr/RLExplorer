@@ -3,6 +3,12 @@ class_name QLearning
 
 const ACTION_COUNT = 4
 
+# Bumped whenever GridAgent.get_state_key() changes shape/meaning.
+# A saved table is only meaningful for the state encoding that
+# produced it - loading a table from an older, incompatible
+# encoding would silently mix up unrelated states and actions.
+const STATE_FORMAT_VERSION := 2
+
 var q_table: Dictionary = {}
 var rng := RandomNumberGenerator.new()
 
@@ -70,11 +76,17 @@ func save_q_table(path: String) -> bool:
 		print("Failed to open Q-table for writing: ", path)
 		return false
 
-	var json_text := JSON.stringify(q_table)
+	var payload := {
+		"version": STATE_FORMAT_VERSION,
+		"q_table": q_table
+	}
+
+	var json_text := JSON.stringify(payload)
 	file.store_string(json_text)
 	file.close()
 
 	print("Q-table saved: ", path)
+	print("Q-table format version: ", STATE_FORMAT_VERSION)
 	print("Q-table states saved: ", q_table.size())
 
 	return true
@@ -105,7 +117,34 @@ func load_q_table(path: String) -> bool:
 		print("Invalid Q-table format: expected Dictionary.")
 		return false
 
-	var loaded_table: Dictionary = json.data
+	var payload: Dictionary = json.data
+
+	# Reject tables saved before versioning existed, or saved by a
+	# different state encoding. Loading these would map today's
+	# state keys onto stale, meaningless Q-values instead of
+	# failing loudly - so we fail loudly instead.
+	if not payload.has("version") or not payload.has("q_table"):
+		print("Q-table file is from an older, unversioned format.")
+		print("It is not compatible with the current state encoding.")
+		print("Please retrain (press T) to generate a new Q-table.")
+		return false
+
+	if payload["version"] != STATE_FORMAT_VERSION:
+		print(
+			"Q-table version mismatch: file is version ",
+			payload["version"],
+			", current encoding is version ",
+			STATE_FORMAT_VERSION,
+			"."
+		)
+		print("Please retrain (press T) to generate a new Q-table.")
+		return false
+
+	var loaded_table = payload["q_table"]
+
+	if not loaded_table is Dictionary:
+		print("Invalid Q-table format: expected Dictionary.")
+		return false
 
 	for state_key in loaded_table:
 		var q_values = loaded_table[state_key]
@@ -121,6 +160,7 @@ func load_q_table(path: String) -> bool:
 	q_table = loaded_table
 
 	print("Q-table loaded: ", path)
+	print("Q-table format version: ", payload["version"])
 	print("Q-table states loaded: ", q_table.size())
 
 	return true

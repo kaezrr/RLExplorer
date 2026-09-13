@@ -16,7 +16,6 @@ extends Node3D
 # Training controls
 # --------------------------------------------------
 
-@export var run_training := false
 @export var training_episodes := 5000
 @export var alpha := 0.1
 @export var gamma := 0.9
@@ -28,6 +27,10 @@ extends Node3D
 @export var load_trained_q_table := false
 
 const Q_TABLE_PATH := "user://q_table.json"
+
+# Prevents starting a second training run while one is already
+# in progress (e.g. from repeated T presses).
+var training_in_progress := false
 
 # --------------------------------------------------
 # Automatic playback configuration
@@ -117,6 +120,7 @@ func _ready() -> void:
 	print("")
 	print("Controls:")
 	print("W / A / S / D = Manual movement")
+	print("T = Train model")
 	print("P = Trained policy playback")
 	print("R = Random policy playback")
 	print("M = Manual control")
@@ -187,6 +191,17 @@ func load_configured_q_table() -> bool:
 # --------------------------------------------------
 
 func run_configured_training() -> void:
+	if training_in_progress:
+		print("Training already in progress, ignoring request.")
+		return
+
+	if playback_running:
+		print("Cannot start training while playback is running.")
+		print("Press M to return to manual mode, then try again.")
+		return
+
+	training_in_progress = true
+
 	print("")
 	print("Starting configured training")
 	print("Episodes: ", training_episodes)
@@ -245,6 +260,8 @@ func run_configured_training() -> void:
 		)
 
 	print("")
+
+	training_in_progress = false
 
 
 # --------------------------------------------------
@@ -312,6 +329,7 @@ func start_manual_mode() -> void:
 	playback_timer = 0.0
 
 	print("")
+	print("T = Train model")
 	print("Manual control enabled")
 	print("Use W/A/S/D to move the agent.")
 	print("")
@@ -476,6 +494,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_D:
 			if playback_mode == PlaybackMode.MANUAL:
 				test_agent_move(GridAgent.Action.RIGHT)
+
+		# ----------------------------------------------
+		# Train model
+		# ----------------------------------------------
+
+		KEY_T:
+			run_configured_training()
 
 		# ----------------------------------------------
 		# Trained policy
