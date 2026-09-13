@@ -23,6 +23,8 @@ sky = SubResource("Sky_vi7ne")
 
 [node name="Main" type="Node3D" unique_id=341774346]
 script = ExtResource("1_0wfyh")
+run_training = true
+training_episodes = 3000
 
 [node name="GridMap" type="GridMap" parent="." unique_id=235537360]
 mesh_library = ExtResource("1_o5qli")

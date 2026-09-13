@@ -135,17 +135,17 @@ func try_move(action: int) -> Dictionary:
 		"position": grid_position
 	}
 
-func is_inside_grid(position: Vector2i) -> bool:
-	if position.y < 0:
+func is_inside_grid(world_position: Vector2i) -> bool:
+	if world_position.y < 0:
 		return false
 
-	if position.y >= grid_data.size():
+	if world_position.y >= grid_data.size():
 		return false
 
-	if position.x < 0:
+	if world_position.x < 0:
 		return false
 
-	if position.x >= grid_data[position.y].size():
+	if world_position.x >= grid_data[world_position.y].size():
 		return false
 
 	return true
