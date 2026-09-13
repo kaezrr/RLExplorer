@@ -40,7 +40,7 @@ extends Node3D
 # map is refreshed only every N episodes.
 # This makes training feel fast while still letting
 # you see the agent's current learned behaviour.
-@export var visual_training_interval := 50
+@export var visual_training_interval := 25
 
 # --------------------------------------------------
 # Q-table
@@ -85,24 +85,6 @@ var q_learning: QLearning
 var trainer: Trainer
 
 # --------------------------------------------------
-# Camera
-# --------------------------------------------------
-
-
-func position_camera(grid_size: int) -> void:
-	var center := Vector3(grid_size / 2.0, 0, grid_size / 2.0)
-
-	var horizontal_distance := grid_size * 0.9
-	var height := grid_size * 1.6
-
-	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = grid_size * 1.15
-
-	camera.position = center + Vector3(horizontal_distance, height, horizontal_distance)
-
-	camera.look_at(center, Vector3.UP)
-
-# --------------------------------------------------
 # Initialization
 # --------------------------------------------------
 
@@ -120,8 +102,6 @@ func _ready() -> void:
 
 	# Build the initial map.
 	setup_demo_map(MAP_SEED)
-
-	position_camera(GridWorld.GRID_SIZE)
 
 	print("")
 	print("==========================================")
