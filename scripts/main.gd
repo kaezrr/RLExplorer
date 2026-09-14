@@ -62,12 +62,11 @@ var training_in_progress := false
 const MAX_PLAYBACK_STEPS := 150
 
 enum PlaybackMode {
-	MANUAL,
 	TRAINED,
 	RANDOM,
 }
 
-var playback_mode: PlaybackMode = PlaybackMode.MANUAL
+var playback_mode: PlaybackMode = PlaybackMode.TRAINED
 var playback_running := false
 
 var playback_timer := 0.0
@@ -110,12 +109,10 @@ func _ready() -> void:
 	print("Current map seed: ", MAP_SEED)
 	print("")
 	print("Controls:")
-	print("W / A / S / D = Manual movement")
 	print("T = Train model")
 	print("P = Trained policy playback")
 	print("R = Random policy playback")
 	print("N = New random map")
-	print("M = Manual control")
 	print("")
 	print("Q-table path: ", Q_TABLE_PATH)
 	print("==========================================")
@@ -193,9 +190,6 @@ func randomize_current_map() -> void:
 	print("==========================================")
 	print("")
 
-	# Return to manual mode.
-	playback_mode = PlaybackMode.MANUAL
-
 	# Build the new map.
 	setup_demo_map(MAP_SEED)
 
@@ -234,13 +228,10 @@ func run_configured_training() -> void:
 	if playback_running:
 		print("Cannot start training while playback is running.")
 
-		print("Press M to return to manual mode, then try again.")
-
 		return
 
 	training_in_progress = true
 	playback_running = false
-	playback_mode = PlaybackMode.MANUAL
 
 	print("")
 	print("==========================================")
@@ -316,16 +307,12 @@ func run_configured_training() -> void:
 
 	training_in_progress = false
 
-	# Restore the map the user was viewing before training.
-	playback_mode = PlaybackMode.MANUAL
-
 	setup_demo_map(MAP_SEED)
 
 	print("")
 	print("Training finished.")
 	print("P = trained playback")
 	print("R = random playback")
-	print("M = manual control")
 	print("N = new random map")
 	print("")
 
@@ -380,9 +367,6 @@ func start_trained_playback() -> void:
 	if not load_configured_q_table():
 		print("ERROR: Could not load trained Q-table.")
 
-		print("Returning to manual control.")
-
-		playback_mode = PlaybackMode.MANUAL
 		playback_running = false
 
 		return
@@ -425,21 +409,6 @@ func start_random_playback() -> void:
 
 	print("Policy: Random")
 	print("Playback started")
-	print("")
-
-# --------------------------------------------------
-# Return to manual mode
-# --------------------------------------------------
-
-
-func start_manual_mode() -> void:
-	playback_running = false
-	playback_mode = PlaybackMode.MANUAL
-	playback_timer = 0.0
-
-	print("")
-	print("Manual control enabled")
-	print("Use W/A/S/D to move the agent.")
 	print("")
 
 # --------------------------------------------------
@@ -581,25 +550,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	match event.keycode:
 		# ----------------------------------------------
-		# Manual movement
-		# ----------------------------------------------
-		KEY_W:
-			if playback_mode == PlaybackMode.MANUAL:
-				test_agent_move(GridAgent.Action.UP)
-
-		KEY_S:
-			if playback_mode == PlaybackMode.MANUAL:
-				test_agent_move(GridAgent.Action.DOWN)
-
-		KEY_A:
-			if playback_mode == PlaybackMode.MANUAL:
-				test_agent_move(GridAgent.Action.LEFT)
-
-		KEY_D:
-			if playback_mode == PlaybackMode.MANUAL:
-				test_agent_move(GridAgent.Action.RIGHT)
-
-		# ----------------------------------------------
 		# Train model
 		# ----------------------------------------------
 		KEY_T:
@@ -622,34 +572,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		# ----------------------------------------------
 		KEY_N:
 			randomize_current_map()
-
-		# ----------------------------------------------
-		# Manual mode
-		# ----------------------------------------------
-		KEY_M:
-			start_manual_mode()
-
-# --------------------------------------------------
-# Manual movement
-# --------------------------------------------------
-
-
-func test_agent_move(action: int) -> void:
-	var result := agent.try_move(action)
-
-	# If a collectible was collected, refresh the
-	# GridMap so the collectible disappears visually.
-	if result["collected"]:
-		grid_renderer.render_grid(agent.grid_data, grid_map)
-
-	print(
-		"Manual action: ",
-		action_name(action),
-		" | Result: ",
-		result,
-		" | State: ",
-		agent.get_state_key(),
-	)
 
 # --------------------------------------------------
 # Utility
