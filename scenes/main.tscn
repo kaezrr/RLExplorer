@@ -5,6 +5,49 @@
 [ext_resource type="Script" uid="uid://cobqvaad7llvj" path="res://scripts/camera.gd" id="3_jyhfs"]
 [ext_resource type="Script" uid="uid://cc56gahg4a4d2" path="res://scripts/agent.gd" id="3_sugp2"]
 [ext_resource type="Script" uid="uid://dtlhw70bisfqs" path="res://scripts/editor_grid_preview.gd" id="3_tbgi4"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud01"]
+[ext_resource type="Script" path="res://scripts/reward_graph.gd" id="5_rwgr1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbar"]
+content_margin_left = 20.0
+content_margin_top = 8.0
+content_margin_right = 20.0
+content_margin_bottom = 8.0
+bg_color = Color(0.08, 0.09, 0.12, 0.85)
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 0.1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(0.07, 0.08, 0.11, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 0.12)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toast"]
+content_margin_left = 16.0
+content_margin_top = 6.0
+content_margin_right = 16.0
+content_margin_bottom = 6.0
+bg_color = Color(0.1, 0.12, 0.16, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.6, 0.9, 0.6)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f1vde"]
 albedo_color = Color(0.96862745, 0.09019608, 1, 1)
@@ -52,3 +95,222 @@ environment = SubResource("Environment_mf55y")
 transform = Transform3D(0.99999994, 0, 0, 0, -4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0)
 shadow_enabled = true
 shadow_blur = 0.75
+
+[node name="UI" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud01")
+
+[node name="TopBar" type="PanelContainer" parent="UI"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 42.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbar")
+
+[node name="HBox" type="HBoxContainer" parent="UI/TopBar"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/TopBar/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "RL GRID WORLD"
+
+[node name="Spacer" type="Control" parent="UI/TopBar/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MapSeed" type="Label" parent="UI/TopBar/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "MAP 100"
+
+[node name="StatusPanel" type="PanelContainer" parent="UI"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -340.0
+offset_right = 265.0
+offset_bottom = -72.0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="UI/StatusPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ModeTitle" type="Label" parent="UI/StatusPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "READY"
+
+[node name="HSeparator" type="HSeparator" parent="UI/StatusPanel/VBox"]
+layout_mode = 2
+
+[node name="EpisodeLabel" type="Label" parent="UI/StatusPanel/VBox"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Episode 0 / 5,000"
+
+[node name="ProgressBar" type="ProgressBar" parent="UI/StatusPanel/VBox"]
+visible = false
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+show_percentage = false
+
+[node name="StageLabel" type="Label" parent="UI/StatusPanel/VBox"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 0.8)
+theme_override_font_sizes/font_size = 11
+text = "Training..."
+
+[node name="MetricsBox" type="VBoxContainer" parent="UI/StatusPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RewardLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Reward: --"
+
+[node name="AvgRewardLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Avg reward: --"
+
+[node name="EpsilonLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Epsilon: 1.00"
+
+[node name="StatesLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "States learned: 0"
+
+[node name="PlaybackBox" type="VBoxContainer" parent="UI/StatusPanel/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="StepLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Step: 0"
+
+[node name="PlaybackRewardLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Reward: +0.0"
+
+[node name="CollectedLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Collected: 0 / 0"
+
+[node name="RemainingLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Remaining: 0"
+
+[node name="EvalBox" type="VBoxContainer" parent="UI/StatusPanel/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="EvalTitle" type="Label" parent="UI/StatusPanel/VBox/EvalBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "EVALUATION"
+
+[node name="EvalSummaryLabel" type="Label" parent="UI/StatusPanel/VBox/EvalBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = ""
+
+[node name="RewardGraphPanel" type="PanelContainer" parent="UI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -380.0
+offset_top = -290.0
+offset_right = -20.0
+offset_bottom = -72.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="UI/RewardGraphPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="GraphTitle" type="Label" parent="UI/RewardGraphPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "REWARD HISTORY"
+
+[node name="RewardGraph" type="Control" parent="UI/RewardGraphPanel/VBox"]
+custom_minimum_size = Vector2(330, 160)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("5_rwgr1")
+
+[node name="Controls" type="HBoxContainer" parent="UI"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -54.0
+offset_right = 250.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TrainButton" type="Button" parent="UI/Controls"]
+custom_minimum_size = Vector2(105, 34)
+layout_mode = 2
+text = "Train"
+
+[node name="TrainedButton" type="Button" parent="UI/Controls"]
+custom_minimum_size = Vector2(105, 34)
+layout_mode = 2
+text = "▶ Trained"
+
+[node name="RandomButton" type="Button" parent="UI/Controls"]
+custom_minimum_size = Vector2(105, 34)
+layout_mode = 2
+text = "▶ Random"
+
+[node name="NewMapButton" type="Button" parent="UI/Controls"]
+custom_minimum_size = Vector2(105, 34)
+layout_mode = 2
+text = "New Map"
+
+[node name="Toast" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = 52.0
+offset_right = 180.0
+offset_bottom = 88.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_toast")
+
+[node name="ToastLabel" type="Label" parent="UI/Toast"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1

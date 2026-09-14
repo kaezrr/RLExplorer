@@ -3,6 +3,7 @@ extends Node3D
 @onready var grid_map: GridMap = $GridMap
 @onready var agent: GridAgent = $Agent
 @onready var camera: Camera3D = $Camera3D
+@onready var hud: HUD = $UI
 
 
 # --------------------------------------------------
@@ -102,6 +103,15 @@ func _ready() -> void:
 	# Build the initial map.
 	setup_demo_map(MAP_SEED)
 
+	if hud != null:
+		hud.train_requested.connect(run_configured_training)
+		hud.trained_playback_requested.connect(start_trained_playback)
+		hud.random_playback_requested.connect(start_random_playback)
+		hud.new_map_requested.connect(randomize_current_map)
+
+		hud.set_map_seed(MAP_SEED)
+		hud.set_states_learned(q_learning.q_table.size())
+
 	print("")
 	print("==========================================")
 	print("RL GRID WORLD")
@@ -148,6 +158,10 @@ func setup_demo_map(map_seed: int) -> void:
 
 	playback_start_collectibles = (agent.get_collectible_count())
 
+	if hud != null:
+		hud.set_map_seed(map_seed)
+		hud.set_states_learned(q_learning.q_table.size())
+
 	print("")
 	print("Map reset")
 	print("Seed: ", map_seed)
@@ -193,6 +207,9 @@ func randomize_current_map() -> void:
 	# Build the new map.
 	setup_demo_map(MAP_SEED)
 
+	if hud != null:
+		hud.show_toast("✓ New map generated (Seed %d)" % MAP_SEED, 2.0)
+
 # --------------------------------------------------
 # Q-table loading
 # --------------------------------------------------
@@ -209,6 +226,8 @@ func load_configured_q_table() -> bool:
 
 	if loaded:
 		print("Q-table states: ", q_learning.q_table.size())
+		if hud != null:
+			hud.set_states_learned(q_learning.q_table.size())
 
 	print("")
 
@@ -232,6 +251,9 @@ func run_configured_training() -> void:
 
 	training_in_progress = true
 	playback_running = false
+
+	if hud != null:
+		hud.on_training_started(training_episodes)
 
 	print("")
 	print("==========================================")
@@ -285,7 +307,17 @@ func run_configured_training() -> void:
 	# --------------------------------------------------
 	# Held-out evaluation.
 	# --------------------------------------------------
+	if hud != null:
+		hud.on_training_evaluating()
+
 	var evaluation_results := trainer.evaluate_test_maps()
+
+	if hud != null:
+		hud.on_evaluation_finished(evaluation_results)
+		hud.on_training_finished({
+			"total_episodes": rewards.size(),
+			"states_learned": q_learning.q_table.size(),
+		})
 
 	print("HELD-OUT EVALUATION RESULTS")
 
@@ -329,6 +361,10 @@ func _on_training_snapshot(data: Dictionary) -> void:
 	# policy is behaving.
 	grid_renderer.render_grid(agent.grid_data, grid_map)
 
+	if hud != null:
+		data["states_count"] = q_learning.q_table.size()
+		hud.on_training_progress(data)
+
 	print(
 		"Training snapshot | Episode ",
 		data["episode"],
@@ -366,6 +402,8 @@ func start_trained_playback() -> void:
 	# Load the saved policy before starting playback.
 	if not load_configured_q_table():
 		print("ERROR: Could not load trained Q-table.")
+		if hud != null:
+			hud.show_toast("⚠ No trained Q-table found. Train first!", 3.0)
 
 		playback_running = false
 
@@ -377,6 +415,9 @@ func start_trained_playback() -> void:
 	playback_mode = PlaybackMode.TRAINED
 	playback_running = true
 	playback_timer = playback_step_delay
+
+	if hud != null:
+		hud.on_playback_started("Trained", playback_start_collectibles)
 
 	print("Policy: Trained")
 	print("Epsilon: 0.0")
@@ -406,6 +447,9 @@ func start_random_playback() -> void:
 	playback_mode = PlaybackMode.RANDOM
 	playback_running = true
 	playback_timer = playback_step_delay
+
+	if hud != null:
+		hud.on_playback_started("Random", playback_start_collectibles)
 
 	print("Policy: Random")
 	print("Playback started")
@@ -479,6 +523,13 @@ func run_playback_step() -> void:
 	if result["collected"]:
 		grid_renderer.render_grid(agent.grid_data, grid_map)
 
+	if hud != null:
+		hud.on_playback_step({
+			"step": playback_steps,
+			"total_reward": playback_total_reward,
+			"remaining": agent.get_collectible_count(),
+		})
+
 	print(
 		"Playback step ",
 		playback_steps,
@@ -535,6 +586,14 @@ func finish_playback(completed: bool) -> void:
 
 	print("==========================================")
 	print("")
+
+	if hud != null:
+		hud.on_playback_finished({
+			"policy_name": policy_name,
+			"completed": completed,
+			"steps": playback_steps,
+			"reward": playback_total_reward,
+		})
 
 # --------------------------------------------------
 # Input
