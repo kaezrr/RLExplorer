@@ -39,6 +39,13 @@ func run_training(
 	var epsilon := epsilon_start
 	var safe_visual_interval: int = max(1, visual_interval)
 
+	# Rewards for every episode since the last snapshot was shown.
+	# The Q-learning runs every episode regardless of visual_interval,
+	# so this batch is what lets the reward graph get one point per
+	# real episode instead of one point per snapshot.
+	var batch_rewards: Array[float] = []
+	var batch_start_episode: int = 0
+
 	for episode in range(num_episodes):
 		# Cycle through the 8 training maps in round-robin order.
 		var training_seed: int = training_seeds[episode % training_seeds.size()]
@@ -46,6 +53,7 @@ func run_training(
 		var total_reward := run_episode(training_seed, alpha, gamma, epsilon)
 
 		episode_rewards.append(total_reward)
+		batch_rewards.append(total_reward)
 
 		epsilon = max(epsilon_end, epsilon * epsilon_decay)
 
@@ -66,11 +74,18 @@ func run_training(
 						"epsilon": epsilon,
 						"remaining_collectibles": agent.get_collectible_count(),
 						"position": agent.grid_position,
+						# All per-episode rewards since the last snapshot,
+						# in order, starting at batch_start_episode + 1.
+						"episode_rewards_batch": batch_rewards.duplicate(),
+						"batch_start_episode": batch_start_episode + 1,
 					}
 				)
 
+			batch_rewards.clear()
+			batch_start_episode = episode + 1
+
 			# Give Godot one frame to display this snapshot before
-			# the next batch of 50 episodes runs.
+			# the next batch of episodes runs.
 			await agent.get_tree().process_frame
 
 			print(

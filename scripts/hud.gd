@@ -34,6 +34,7 @@ signal new_map_requested
 @onready var playback_step_label: Label = $StatusPanel/VBox/PlaybackBox/StepLabel
 @onready var playback_reward_label: Label = $StatusPanel/VBox/PlaybackBox/PlaybackRewardLabel
 @onready var playback_collected_label: Label = $StatusPanel/VBox/PlaybackBox/CollectedLabel
+# Node still exists in the scene, but the "Remaining: N" line is no longer shown.
 @onready var playback_remaining_label: Label = $StatusPanel/VBox/PlaybackBox/RemainingLabel
 
 # Evaluation summary
@@ -149,14 +150,23 @@ func on_training_progress(data: Dictionary) -> void:
 
 	episode_label.text = "Episode %s / %s" % [format_number(ep), format_number(total)]
 	progress_bar.value = ep
-	stage_label.text = "Training... (%d%%)" % int((float(ep) / float(max(1, total))) * 100.0)
+	stage_label.text = "Training..."
 
 	reward_label.text = "Reward: %+.1f" % reward
 	epsilon_label.text = "Epsilon: %.2f" % eps
 	states_label.text = "States learned: %d" % states_learned
 
-	# Feed reward into graph
-	reward_graph.add_reward(ep, reward)
+	# Feed every episode's reward since the last snapshot into the graph,
+	# not just the reward from this one snapshot episode. Otherwise the
+	# graph only ever gets one point per visual_training_interval batch
+	# (e.g. 80 points for 2000 episodes at an interval of 25) instead of
+	# one point per actual training episode.
+	var batch: Array = data.get("episode_rewards_batch", [reward])
+	if batch.is_empty():
+		batch = [reward]
+	var batch_start_ep: int = data.get("batch_start_episode", ep - batch.size() + 1)
+	for i in range(batch.size()):
+		reward_graph.add_reward(batch_start_ep + i, batch[i])
 
 	if reward_graph.moving_averages.size() > 0:
 		var current_avg: float = reward_graph.moving_averages[-1]
@@ -225,7 +235,7 @@ func on_playback_started(policy_name: String, total_collectibles: int) -> void:
 	playback_step_label.text = "Step: 0"
 	playback_reward_label.text = "Reward: +0.0"
 	playback_collected_label.text = "Collected: 0 / %d" % total_collectibles_in_map
-	playback_remaining_label.text = "Remaining: %d" % total_collectibles_in_map
+	playback_remaining_label.visible = false
 
 	show_toast("▶ %s playback started" % policy_name, 2.0)
 
@@ -239,7 +249,6 @@ func on_playback_step(data: Dictionary) -> void:
 	playback_step_label.text = "Step: %d" % step
 	playback_reward_label.text = "Reward: %+.1f" % total_reward
 	playback_collected_label.text = "Collected: %d / %d" % [collected, total_collectibles_in_map]
-	playback_remaining_label.text = "Remaining: %d" % remaining
 
 
 func on_playback_finished(data: Dictionary) -> void:

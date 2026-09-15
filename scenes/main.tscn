@@ -5,8 +5,25 @@
 [ext_resource type="Script" uid="uid://cobqvaad7llvj" path="res://scripts/camera.gd" id="3_jyhfs"]
 [ext_resource type="Script" uid="uid://cc56gahg4a4d2" path="res://scripts/agent.gd" id="3_sugp2"]
 [ext_resource type="Script" uid="uid://dtlhw70bisfqs" path="res://scripts/editor_grid_preview.gd" id="3_tbgi4"]
-[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud01"]
-[ext_resource type="Script" path="res://scripts/reward_graph.gd" id="5_rwgr1"]
+[ext_resource type="Script" uid="uid://b6t14s3upo61w" path="res://scripts/hud.gd" id="4_hud01"]
+[ext_resource type="Script" uid="uid://2elfo73ud1mc" path="res://scripts/reward_graph.gd" id="5_rwgr1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f1vde"]
+albedo_color = Color(0.96862745, 0.09019608, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_mf55y"]
+material = SubResource("StandardMaterial3D_f1vde")
+radius = 0.3
+height = 1.5
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_f1vde"]
+
+[sub_resource type="Sky" id="Sky_vi7ne"]
+sky_material = SubResource("ProceduralSkyMaterial_f1vde")
+
+[sub_resource type="Environment" id="Environment_mf55y"]
+background_mode = 2
+sky = SubResource("Sky_vi7ne")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbar"]
 content_margin_left = 20.0
@@ -49,23 +66,6 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f1vde"]
-albedo_color = Color(0.96862745, 0.09019608, 1, 1)
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_mf55y"]
-material = SubResource("StandardMaterial3D_f1vde")
-radius = 0.3
-height = 1.5
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_f1vde"]
-
-[sub_resource type="Sky" id="Sky_vi7ne"]
-sky_material = SubResource("ProceduralSkyMaterial_f1vde")
-
-[sub_resource type="Environment" id="Environment_mf55y"]
-background_mode = 2
-sky = SubResource("Sky_vi7ne")
-
 [node name="Main" type="Node3D" unique_id=341774346]
 script = ExtResource("1_0wfyh")
 
@@ -96,34 +96,25 @@ transform = Transform3D(0.99999994, 0, 0, 0, -4.3711385e-08, 0.99999994, 0, -0.9
 shadow_enabled = true
 shadow_blur = 0.75
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=1558488150]
 script = ExtResource("4_hud01")
 
-[node name="TopBar" type="PanelContainer" parent="UI"]
+[node name="TopBar" type="PanelContainer" parent="UI" unique_id=1893776656]
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 42.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_topbar")
 
-[node name="HBox" type="HBoxContainer" parent="UI/TopBar"]
+[node name="HBox" type="HBoxContainer" parent="UI/TopBar" unique_id=934464779]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="UI/TopBar/HBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "RL GRID WORLD"
-
-[node name="Spacer" type="Control" parent="UI/TopBar/HBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MapSeed" type="Label" parent="UI/TopBar/HBox"]
+[node name="MapSeed" type="Label" parent="UI/TopBar/HBox" unique_id=1676692202]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "MAP 100"
 
-[node name="StatusPanel" type="PanelContainer" parent="UI"]
+[node name="StatusPanel" type="PanelContainer" parent="UI" unique_id=958677331]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -134,105 +125,104 @@ offset_bottom = -72.0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="UI/StatusPanel"]
+[node name="VBox" type="VBoxContainer" parent="UI/StatusPanel" unique_id=502685274]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ModeTitle" type="Label" parent="UI/StatusPanel/VBox"]
+[node name="ModeTitle" type="Label" parent="UI/StatusPanel/VBox" unique_id=223222126]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "READY"
 
-[node name="HSeparator" type="HSeparator" parent="UI/StatusPanel/VBox"]
+[node name="HSeparator" type="HSeparator" parent="UI/StatusPanel/VBox" unique_id=1884823241]
 layout_mode = 2
 
-[node name="EpisodeLabel" type="Label" parent="UI/StatusPanel/VBox"]
+[node name="EpisodeLabel" type="Label" parent="UI/StatusPanel/VBox" unique_id=606261075]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Episode 0 / 5,000"
 
-[node name="ProgressBar" type="ProgressBar" parent="UI/StatusPanel/VBox"]
+[node name="ProgressBar" type="ProgressBar" parent="UI/StatusPanel/VBox" unique_id=2055130738]
 visible = false
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
 show_percentage = false
 
-[node name="StageLabel" type="Label" parent="UI/StatusPanel/VBox"]
+[node name="StageLabel" type="Label" parent="UI/StatusPanel/VBox" unique_id=1868233873]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 0.8)
 theme_override_font_sizes/font_size = 11
 text = "Training..."
 
-[node name="MetricsBox" type="VBoxContainer" parent="UI/StatusPanel/VBox"]
+[node name="MetricsBox" type="VBoxContainer" parent="UI/StatusPanel/VBox" unique_id=68851435]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="RewardLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+[node name="RewardLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox" unique_id=320519871]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Reward: --"
 
-[node name="AvgRewardLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+[node name="AvgRewardLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox" unique_id=1973281095]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Avg reward: --"
 
-[node name="EpsilonLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+[node name="EpsilonLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox" unique_id=1759137726]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Epsilon: 1.00"
 
-[node name="StatesLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox"]
+[node name="StatesLabel" type="Label" parent="UI/StatusPanel/VBox/MetricsBox" unique_id=715400248]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "States learned: 0"
 
-[node name="PlaybackBox" type="VBoxContainer" parent="UI/StatusPanel/VBox"]
+[node name="PlaybackBox" type="VBoxContainer" parent="UI/StatusPanel/VBox" unique_id=1124155987]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="StepLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+[node name="StepLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox" unique_id=238136179]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Step: 0"
 
-[node name="PlaybackRewardLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+[node name="PlaybackRewardLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox" unique_id=3360040]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Reward: +0.0"
 
-[node name="CollectedLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+[node name="CollectedLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox" unique_id=119439761]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Collected: 0 / 0"
 
-[node name="RemainingLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox"]
+[node name="RemainingLabel" type="Label" parent="UI/StatusPanel/VBox/PlaybackBox" unique_id=2043999568]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Remaining: 0"
 
-[node name="EvalBox" type="VBoxContainer" parent="UI/StatusPanel/VBox"]
+[node name="EvalBox" type="VBoxContainer" parent="UI/StatusPanel/VBox" unique_id=1383467217]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="EvalTitle" type="Label" parent="UI/StatusPanel/VBox/EvalBox"]
+[node name="EvalTitle" type="Label" parent="UI/StatusPanel/VBox/EvalBox" unique_id=792991178]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "EVALUATION"
 
-[node name="EvalSummaryLabel" type="Label" parent="UI/StatusPanel/VBox/EvalBox"]
+[node name="EvalSummaryLabel" type="Label" parent="UI/StatusPanel/VBox/EvalBox" unique_id=2005072651]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = ""
 
-[node name="RewardGraphPanel" type="PanelContainer" parent="UI"]
+[node name="RewardGraphPanel" type="PanelContainer" parent="UI" unique_id=1511157725]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -246,23 +236,23 @@ grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="UI/RewardGraphPanel"]
+[node name="VBox" type="VBoxContainer" parent="UI/RewardGraphPanel" unique_id=1851089833]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="GraphTitle" type="Label" parent="UI/RewardGraphPanel/VBox"]
+[node name="GraphTitle" type="Label" parent="UI/RewardGraphPanel/VBox" unique_id=197261982]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "REWARD HISTORY"
 
-[node name="RewardGraph" type="Control" parent="UI/RewardGraphPanel/VBox"]
+[node name="RewardGraph" type="Control" parent="UI/RewardGraphPanel/VBox" unique_id=2013119637]
 custom_minimum_size = Vector2(330, 160)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("5_rwgr1")
 
-[node name="Controls" type="HBoxContainer" parent="UI"]
+[node name="Controls" type="HBoxContainer" parent="UI" unique_id=139458210]
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -277,27 +267,27 @@ grow_vertical = 0
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="TrainButton" type="Button" parent="UI/Controls"]
+[node name="TrainButton" type="Button" parent="UI/Controls" unique_id=1914401416]
 custom_minimum_size = Vector2(105, 34)
 layout_mode = 2
 text = "Train"
 
-[node name="TrainedButton" type="Button" parent="UI/Controls"]
+[node name="TrainedButton" type="Button" parent="UI/Controls" unique_id=1592076159]
 custom_minimum_size = Vector2(105, 34)
 layout_mode = 2
 text = "▶ Trained"
 
-[node name="RandomButton" type="Button" parent="UI/Controls"]
+[node name="RandomButton" type="Button" parent="UI/Controls" unique_id=1305379925]
 custom_minimum_size = Vector2(105, 34)
 layout_mode = 2
 text = "▶ Random"
 
-[node name="NewMapButton" type="Button" parent="UI/Controls"]
+[node name="NewMapButton" type="Button" parent="UI/Controls" unique_id=398828936]
 custom_minimum_size = Vector2(105, 34)
 layout_mode = 2
 text = "New Map"
 
-[node name="Toast" type="PanelContainer" parent="UI"]
+[node name="Toast" type="PanelContainer" parent="UI" unique_id=1146684714]
 visible = false
 anchors_preset = 5
 anchor_left = 0.5
@@ -309,7 +299,7 @@ offset_bottom = 88.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_toast")
 
-[node name="ToastLabel" type="Label" parent="UI/Toast"]
+[node name="ToastLabel" type="Label" parent="UI/Toast" unique_id=127952624]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
