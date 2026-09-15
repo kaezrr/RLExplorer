@@ -3,7 +3,7 @@ class_name HUD
 
 # --------------------------------------------------
 # HUD Controller
-# Manages UI elements, status panel, buttons, and toasts.
+# Manages UI elements, status panel, and buttons.
 # Decoupled from RL algorithms.
 # --------------------------------------------------
 
@@ -50,11 +50,6 @@ signal new_map_requested
 @onready var random_button: Button = $Controls/RandomButton
 @onready var new_map_button: Button = $Controls/NewMapButton
 
-# Toast
-@onready var toast_panel: PanelContainer = $Toast
-@onready var toast_label: Label = $Toast/ToastLabel
-
-var toast_timer: SceneTreeTimer = null
 var current_total_episodes: int = 5000
 var total_collectibles_in_map: int = 0
 var states_learned: int = 0
@@ -66,7 +61,6 @@ func _ready() -> void:
 	random_button.pressed.connect(_on_random_button_pressed)
 	new_map_button.pressed.connect(_on_new_map_button_pressed)
 
-	toast_panel.visible = false
 	show_idle_state()
 
 
@@ -137,7 +131,6 @@ func on_training_started(total_episodes: int) -> void:
 	eval_box.visible = false
 
 	set_controls_enabled(false)
-	show_toast("Training started (%s episodes)" % format_number(total_episodes), 2.0)
 
 
 func on_training_progress(data: Dictionary) -> void:
@@ -195,7 +188,6 @@ func on_training_finished(data: Dictionary) -> void:
 		avg_reward_label.text = "Final avg reward: %+.1f" % final_avg
 
 	set_controls_enabled(true)
-	show_toast("✓ Training complete | Q-table saved", 3.0)
 
 
 func on_evaluation_finished(results: Array[Dictionary]) -> void:
@@ -237,8 +229,6 @@ func on_playback_started(policy_name: String, total_collectibles: int) -> void:
 	playback_collected_label.text = "Collected: 0 / %d" % total_collectibles_in_map
 	playback_remaining_label.visible = false
 
-	show_toast("▶ %s playback started" % policy_name, 2.0)
-
 
 func on_playback_step(data: Dictionary) -> void:
 	var step: int = data.get("step", 0)
@@ -258,7 +248,7 @@ func on_playback_finished(data: Dictionary) -> void:
 	var reward: float = data.get("reward", 0.0)
 
 	var status_msg := "✓ Target reached" if completed else "Stopped"
-	show_toast("%s finished: %s (%d steps, %+.1f reward)" % [policy_name, status_msg, steps, reward], 3.0)
+	print("%s finished: %s (%d steps, %+.1f reward)" % [policy_name, status_msg, steps, reward])
 
 
 # --------------------------------------------------
@@ -287,22 +277,6 @@ func _on_random_button_pressed() -> void:
 
 func _on_new_map_button_pressed() -> void:
 	new_map_requested.emit()
-
-
-# --------------------------------------------------
-# Toast Notification System
-# --------------------------------------------------
-
-
-func show_toast(message: String, duration: float = 2.5) -> void:
-	toast_label.text = message
-	toast_panel.visible = true
-	toast_panel.modulate.a = 1.0
-
-	var tween := create_tween()
-	tween.tween_interval(duration)
-	tween.tween_property(toast_panel, "modulate:a", 0.0, 0.4)
-	tween.tween_callback(func(): toast_panel.visible = false)
 
 
 # --------------------------------------------------

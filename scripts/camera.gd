@@ -13,7 +13,3 @@ func _ready() -> void:
 
 	self.position = center + Vector3(horizontal_distance, height, horizontal_distance)
 	self.look_at(center, Vector3.UP)
-
-	# Push the visible content to the left, leaving room for UI on the right.
-	# Value is in the same units as `size` (world units for ortho).
-	self.h_offset = GRID_SIZE * 0.2

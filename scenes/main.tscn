@@ -50,22 +50,6 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toast"]
-content_margin_left = 16.0
-content_margin_top = 6.0
-content_margin_right = 16.0
-content_margin_bottom = 6.0
-bg_color = Color(0.1, 0.12, 0.16, 0.95)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.3, 0.6, 0.9, 0.6)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [node name="Main" type="Node3D" unique_id=341774346]
 script = ExtResource("1_0wfyh")
 
@@ -286,21 +270,3 @@ text = "▶ Random"
 custom_minimum_size = Vector2(105, 34)
 layout_mode = 2
 text = "New Map"
-
-[node name="Toast" type="PanelContainer" parent="UI" unique_id=1146684714]
-visible = false
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -180.0
-offset_top = 52.0
-offset_right = 180.0
-offset_bottom = 88.0
-grow_horizontal = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_toast")
-
-[node name="ToastLabel" type="Label" parent="UI/Toast" unique_id=127952624]
-layout_mode = 2
-theme_override_font_sizes/font_size = 13
-horizontal_alignment = 1
-vertical_alignment = 1

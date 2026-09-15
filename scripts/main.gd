@@ -207,8 +207,7 @@ func randomize_current_map() -> void:
 	# Build the new map.
 	setup_demo_map(MAP_SEED)
 
-	if hud != null:
-		hud.show_toast("✓ New map generated (Seed %d)" % MAP_SEED, 2.0)
+	print("✓ New map generated (Seed %d)" % MAP_SEED)
 
 # --------------------------------------------------
 # Q-table loading
@@ -401,9 +400,7 @@ func start_trained_playback() -> void:
 
 	# Load the saved policy before starting playback.
 	if not load_configured_q_table():
-		print("ERROR: Could not load trained Q-table.")
-		if hud != null:
-			hud.show_toast("⚠ No trained Q-table found. Train first!", 3.0)
+		print("ERROR: Could not load trained Q-table. Train first!")
 
 		playback_running = false
 
