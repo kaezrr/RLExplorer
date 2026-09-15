@@ -117,13 +117,6 @@ func _ready() -> void:
 	print("RL GRID WORLD")
 	print("==========================================")
 	print("Current map seed: ", MAP_SEED)
-	print("")
-	print("Controls:")
-	print("T = Train model")
-	print("P = Trained policy playback")
-	print("R = Random policy playback")
-	print("N = New random map")
-	print("")
 	print("Q-table path: ", Q_TABLE_PATH)
 	print("==========================================")
 	print("")
@@ -342,9 +335,6 @@ func run_configured_training() -> void:
 
 	print("")
 	print("Training finished.")
-	print("P = trained playback")
-	print("R = random playback")
-	print("N = new random map")
 	print("")
 
 # --------------------------------------------------
@@ -353,12 +343,23 @@ func run_configured_training() -> void:
 
 
 func _on_training_snapshot(data: Dictionary) -> void:
-	# The Trainer has just finished an actual training
-	# episode. Its agent contains the final state of that
-	# episode, including any collectibles it removed.
-	# Render that state now so the player can see how the
-	# policy is behaving.
-	grid_renderer.render_grid(agent.grid_data, grid_map)
+	# The Trainer hands us the map's *starting* state for this
+	# snapshot episode - full collectibles, agent at spawn - not
+	# whatever's left once the episode has already run to
+	# completion. Render that "before" picture instead of
+	# agent.grid_data, which by this point usually already has
+	# every collectible cleared out.
+	var snapshot_grid: Array = data.get("grid_snapshot", agent.grid_data)
+	var snapshot_position: Vector2i = data.get("position", agent.grid_position)
+
+	grid_renderer.render_grid(snapshot_grid, grid_map)
+
+	# Snap the agent's visual transform to match the "before" snapshot
+	# too, rather than leaving it wherever it last drifted to during
+	# the (unrendered) fast training loop.
+	var snapshot_world_position := grid_renderer.grid_to_world(snapshot_position)
+	agent.position = snapshot_world_position
+	agent.visual_target_position = snapshot_world_position
 
 	if hud != null:
 		data["states_count"] = q_learning.q_table.size()
@@ -375,9 +376,9 @@ func _on_training_snapshot(data: Dictionary) -> void:
 		data["reward"],
 		" | Epsilon: ",
 		data["epsilon"],
-		" | Remaining: ",
+		" | Collectibles (before): ",
 		data["remaining_collectibles"],
-		" | Agent position: ",
+		" | Start position: ",
 		data["position"],
 	)
 
@@ -592,42 +593,6 @@ func finish_playback(completed: bool) -> void:
 			"reward": playback_total_reward,
 		})
 
-# --------------------------------------------------
-# Input
-# --------------------------------------------------
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventKey:
-		return
-
-	if not event.pressed or event.echo:
-		return
-
-	match event.keycode:
-		# ----------------------------------------------
-		# Train model
-		# ----------------------------------------------
-		KEY_T:
-			run_configured_training()
-
-		# ----------------------------------------------
-		# Trained policy
-		# ----------------------------------------------
-		KEY_P:
-			start_trained_playback()
-
-		# ----------------------------------------------
-		# Random policy
-		# ----------------------------------------------
-		KEY_R:
-			start_random_playback()
-
-		# ----------------------------------------------
-		# New random map
-		# ----------------------------------------------
-		KEY_N:
-			randomize_current_map()
 
 # --------------------------------------------------
 # Utility

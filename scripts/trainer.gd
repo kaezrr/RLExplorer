@@ -50,18 +50,38 @@ func run_training(
 		# Cycle through the 8 training maps in round-robin order.
 		var training_seed: int = training_seeds[episode % training_seeds.size()]
 
+		# Only refresh the visible world periodically.
+		# The actual Q-learning still runs every episode.
+		var show_snapshot := (
+			(episode + 1) % safe_visual_interval == 0 or episode == num_episodes - 1
+		)
+
+		# For snapshot episodes, capture the map's *starting* state -
+		# full collectibles, agent at its spawn point - before a single
+		# step runs. run_episode() below will mutate its own internally
+		# generated grid as the episode plays out (often clearing every
+		# collectible well within max_steps), so peeking the fresh map
+		# here is what lets the snapshot show the "before" picture
+		# instead of the "after" one.
+		var snapshot_grid: Array = []
+		var snapshot_start_position := Vector2i.ZERO
+		var snapshot_collectible_count := 0
+
+		if show_snapshot:
+			snapshot_grid = grid_world.generate_map(training_seed)
+			snapshot_start_position = grid_world.find_agent_start(snapshot_grid)
+
+			for row in snapshot_grid:
+				for cell in row:
+					if cell == GridWorld.COLLECTIBLE:
+						snapshot_collectible_count += 1
+
 		var total_reward := run_episode(training_seed, alpha, gamma, epsilon)
 
 		episode_rewards.append(total_reward)
 		batch_rewards.append(total_reward)
 
 		epsilon = max(epsilon_end, epsilon * epsilon_decay)
-
-		# Only refresh the visible world periodically.
-		# The actual Q-learning still runs every episode.
-		var show_snapshot := (
-			(episode + 1) % safe_visual_interval == 0 or episode == num_episodes - 1
-		)
 
 		if show_snapshot:
 			if visual_callback.is_valid():
@@ -72,8 +92,9 @@ func run_training(
 						"seed": training_seed,
 						"reward": total_reward,
 						"epsilon": epsilon,
-						"remaining_collectibles": agent.get_collectible_count(),
-						"position": agent.grid_position,
+						"remaining_collectibles": snapshot_collectible_count,
+						"position": snapshot_start_position,
+						"grid_snapshot": snapshot_grid,
 						# All per-episode rewards since the last snapshot,
 						# in order, starting at batch_start_episode + 1.
 						"episode_rewards_batch": batch_rewards.duplicate(),
@@ -99,10 +120,10 @@ func run_training(
 				total_reward,
 				" | Epsilon: ",
 				epsilon,
-				" | Remaining: ",
-				agent.get_collectible_count(),
-				" | Position: ",
-				agent.grid_position,
+				" | Collectibles (before): ",
+				snapshot_collectible_count,
+				" | Start position: ",
+				snapshot_start_position,
 			)
 
 	return episode_rewards
