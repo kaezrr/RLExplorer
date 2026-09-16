@@ -27,7 +27,7 @@ signal new_map_requested
 @onready var reward_label: Label = $StatusPanel/VBox/MetricsBox/RewardLabel
 @onready var avg_reward_label: Label = $StatusPanel/VBox/MetricsBox/AvgRewardLabel
 @onready var epsilon_label: Label = $StatusPanel/VBox/MetricsBox/EpsilonLabel
-@onready var states_label: Label = $StatusPanel/VBox/MetricsBox/StatesLabel
+@onready var weights_label: Label = $StatusPanel/VBox/MetricsBox/StatesLabel
 
 # Playback metrics
 @onready var playback_box: VBoxContainer = $StatusPanel/VBox/PlaybackBox
@@ -52,7 +52,7 @@ signal new_map_requested
 
 var current_total_episodes: int = 5000
 var total_collectibles_in_map: int = 0
-var states_learned: int = 0
+var model_parameters: int = 0
 
 
 func _ready() -> void:
@@ -79,8 +79,8 @@ func show_idle_state() -> void:
 	reward_label.visible = false
 	avg_reward_label.visible = false
 	epsilon_label.visible = false
-	states_label.text = "States learned: %d" % states_learned
-	states_label.visible = true
+	weights_label.text = "Weights: %d" % model_parameters
+	weights_label.visible = true
 
 	playback_box.visible = false
 	eval_box.visible = false
@@ -91,9 +91,14 @@ func set_map_seed(seed_val: int) -> void:
 	map_seed_label.text = "MAP %d" % seed_val
 
 
+func set_model_parameters(count: int) -> void:
+	model_parameters = count
+	weights_label.text = "Weights: %d" % model_parameters
+
+
 func set_states_learned(count: int) -> void:
-	states_learned = count
-	states_label.text = "States learned: %d" % states_learned
+	# Backward-compatible alias for the existing Main script.
+	set_model_parameters(count)
 
 
 # --------------------------------------------------
@@ -124,8 +129,8 @@ func on_training_started(total_episodes: int) -> void:
 	avg_reward_label.visible = true
 	epsilon_label.text = "Epsilon: 1.00"
 	epsilon_label.visible = true
-	states_label.text = "States learned: %d" % states_learned
-	states_label.visible = true
+	weights_label.text = "Weights: %d" % model_parameters
+	weights_label.visible = true
 
 	playback_box.visible = false
 	eval_box.visible = false
@@ -138,8 +143,8 @@ func on_training_progress(data: Dictionary) -> void:
 	var total: int = data.get("total_episodes", current_total_episodes)
 	var reward: float = data.get("reward", 0.0)
 	var eps: float = data.get("epsilon", 0.0)
-	var states: int = data.get("states_count", states_learned)
-	states_learned = states
+	var model_count: int = data.get("states_count", model_parameters)
+	model_parameters = model_count
 
 	episode_label.text = "Episode %s / %s" % [format_number(ep), format_number(total)]
 	progress_bar.value = ep
@@ -147,7 +152,7 @@ func on_training_progress(data: Dictionary) -> void:
 
 	reward_label.text = "Reward: %+.1f" % reward
 	epsilon_label.text = "Epsilon: %.2f" % eps
-	states_label.text = "States learned: %d" % states_learned
+	weights_label.text = "Weights: %d" % model_parameters
 
 	# Feed every episode's reward since the last snapshot into the graph,
 	# not just the reward from this one snapshot episode. Otherwise the
@@ -173,15 +178,15 @@ func on_training_evaluating() -> void:
 
 func on_training_finished(data: Dictionary) -> void:
 	var total: int = data.get("total_episodes", current_total_episodes)
-	var states: int = data.get("states_learned", states_learned)
-	states_learned = states
+	var model_count: int = data.get("model_parameters", data.get("states_learned", model_parameters))
+	model_parameters = model_count
 
 	mode_title_label.text = "TRAINING COMPLETE"
 	episode_label.text = "Episodes: %s" % format_number(total)
 	progress_bar.visible = false
 	stage_label.text = "Complete"
 
-	states_label.text = "States learned: %d" % states_learned
+	weights_label.text = "Weights: %d" % model_parameters
 
 	if reward_graph.moving_averages.size() > 0:
 		var final_avg: float = reward_graph.moving_averages[-1]

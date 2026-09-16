@@ -1,66 +1,49 @@
 extends Node3D
+class_name RLExplorerMain
 
 @onready var grid_map: GridMap = $GridMap
 @onready var agent: GridAgent = $Agent
 @onready var camera: Camera3D = $Camera3D
 @onready var hud: HUD = $UI
 
-
 # --------------------------------------------------
-# Map configuration
+# V3 map configuration
 # --------------------------------------------------
 
-# Current map seed.
-#
-# Training uses seeds 1-8.
-# Held-out evaluation normally uses seed 100.
-#
-# Press N during the game to generate a new random map.
 @export var MAP_SEED := 100
 
 # --------------------------------------------------
-# Training controls
+# V3 training configuration
 # --------------------------------------------------
 
-@export var training_episodes := 5000
-@export var alpha := 0.1
-@export var gamma := 0.9
+@export var training_episodes := 15000
+@export var greedy_finetune_episodes := 5000
+@export var alpha := 0.015
+@export var gamma := 0.98
 @export var epsilon_start := 1.0
 @export var epsilon_end := 0.05
-@export var epsilon_decay := 0.995
+@export var epsilon_decay := 0.9995
 
-@export var save_q_table_after_training := true
-@export var load_trained_q_table := false
+@export var save_weights_after_training := true
+@export var load_trained_weights := false
 
-
-# --------------------------------------------------
-# Accelerated visual training
-# --------------------------------------------------
-
-# Training still runs every episode, but the visible
-# map is refreshed only every N episodes.
-# This makes training feel fast while still letting
-# you see the agent's current learned behaviour.
+# Accelerated visual training. Training continues every episode; the visible
+# map is refreshed only at this interval.
 @export var visual_training_interval := 25
 
 # --------------------------------------------------
-# Q-table
+# Persistence
 # --------------------------------------------------
 
-const Q_TABLE_PATH := "user://q_table.json"
-
-
-# Prevents starting a second training run while one is
-# already in progress.
-var training_in_progress := false
+const WEIGHTS_PATH := "user://weights_v3.json"
+const TRAINING_LOG_PATH := "user://training_log_v3.json"
 
 # --------------------------------------------------
-# Automatic playback configuration
+# Playback
 # --------------------------------------------------
 
 @export var playback_step_delay := 0.20
-
-const MAX_PLAYBACK_STEPS := 150
+@export var max_playback_steps := 1152
 
 enum PlaybackMode {
 	TRAINED,
@@ -69,7 +52,6 @@ enum PlaybackMode {
 
 var playback_mode: PlaybackMode = PlaybackMode.TRAINED
 var playback_running := false
-
 var playback_timer := 0.0
 var playback_steps := 0
 var playback_total_reward := 0.0
@@ -83,24 +65,18 @@ var grid_world: GridWorld
 var grid_renderer: GridRenderer
 var q_learning: QLearning
 var trainer: Trainer
-
-# --------------------------------------------------
-# Initialization
-# --------------------------------------------------
+var training_in_progress := false
 
 
 func _ready() -> void:
 	grid_world = GridWorld.new()
 	grid_renderer = GridRenderer.new()
-	q_learning = QLearning.new()
-
-	# Keep Trainer as part of the existing project architecture.
+	q_learning = QLearning.new(12345)
 	trainer = Trainer.new(q_learning, agent, grid_world)
 
 	add_child(grid_world)
 	add_child(grid_renderer)
 
-	# Build the initial map.
 	setup_demo_map(MAP_SEED)
 
 	if hud != null:
@@ -110,50 +86,45 @@ func _ready() -> void:
 		hud.new_map_requested.connect(randomize_current_map)
 
 		hud.set_map_seed(MAP_SEED)
-		hud.set_states_learned(q_learning.q_table.size())
+		# There is no Q-table in V3. Keep the existing HUD field populated with
+		# the number of learned model parameters so the UI remains intact.
+		hud.set_states_learned(q_learning.weights.size())
 
 	print("")
 	print("==========================================")
-	print("RL GRID WORLD")
+	print("RL GRID WORLD - V3 LINEAR Q LEARNING")
 	print("==========================================")
 	print("Current map seed: ", MAP_SEED)
-	print("Q-table path: ", Q_TABLE_PATH)
+	print("Weights path: ", WEIGHTS_PATH)
+	print("Feature count: ", QLearning.FEATURE_COUNT)
 	print("==========================================")
 	print("")
 
-	# --------------------------------------------------
-	# Optional automatic training/loading.
-	# --------------------------------------------------
-	if load_trained_q_table:
-		load_configured_q_table()
+	if load_trained_weights:
+		load_configured_weights()
+
 
 # --------------------------------------------------
 # Map setup / reset
 # --------------------------------------------------
 
-
 func setup_demo_map(map_seed: int) -> void:
-	# Stop playback.
 	playback_running = false
 	playback_timer = 0.0
-
-	# Reset playback statistics.
 	playback_steps = 0
 	playback_total_reward = 0.0
 
 	var grid := grid_world.generate_map(map_seed)
-
 	grid_renderer.render_grid(grid, grid_map)
 
 	var start_position := grid_world.find_agent_start(grid)
+	agent.setup(start_position, grid, grid_renderer, gamma)
 
-	agent.setup(start_position, grid, grid_renderer)
-
-	playback_start_collectibles = (agent.get_collectible_count())
+	playback_start_collectibles = agent.get_collectible_count()
 
 	if hud != null:
 		hud.set_map_seed(map_seed)
-		hud.set_states_learned(q_learning.q_table.size())
+		hud.set_states_learned(q_learning.weights.size())
 
 	print("")
 	print("Map reset")
@@ -162,29 +133,23 @@ func setup_demo_map(map_seed: int) -> void:
 	print("Collectibles: ", playback_start_collectibles)
 	print("")
 
+
 # --------------------------------------------------
 # Generate a new random map
 # --------------------------------------------------
 
-
 func randomize_current_map() -> void:
-	# Do not allow a map reset while training is running.
 	if training_in_progress:
 		print("")
 		print("Cannot randomize map while training is in progress.")
 		print("")
 		return
 
-	# Stop any automatic playback.
 	playback_running = false
 	playback_timer = 0.0
 
-	# Generate a new random seed.
 	var old_seed := MAP_SEED
-
 	MAP_SEED = randi_range(1, 2147483647)
-
-	# Make sure the new seed is actually different.
 	if MAP_SEED == old_seed:
 		MAP_SEED += 1
 
@@ -197,48 +162,41 @@ func randomize_current_map() -> void:
 	print("==========================================")
 	print("")
 
-	# Build the new map.
 	setup_demo_map(MAP_SEED)
 
 	print("✓ New map generated (Seed %d)" % MAP_SEED)
 
+
 # --------------------------------------------------
-# Q-table loading
+# Weight loading
 # --------------------------------------------------
 
-
-func load_configured_q_table() -> bool:
+func load_configured_weights() -> bool:
 	print("")
-	print("Loading trained Q-table")
-	print("Path: ", Q_TABLE_PATH)
+	print("Loading V3 trained weights")
+	print("Path: ", WEIGHTS_PATH)
 
-	var loaded := q_learning.load_q_table(Q_TABLE_PATH)
+	var loaded := q_learning.load_weights(WEIGHTS_PATH)
+	print("Weight load successful: ", loaded)
 
-	print("Q-table load successful: ", loaded)
-
-	if loaded:
-		print("Q-table states: ", q_learning.q_table.size())
-		if hud != null:
-			hud.set_states_learned(q_learning.q_table.size())
+	if loaded and hud != null:
+		hud.set_states_learned(q_learning.weights.size())
 
 	print("")
-
 	return loaded
+
 
 # --------------------------------------------------
 # Training
 # --------------------------------------------------
 
-
 func run_configured_training() -> void:
 	if training_in_progress:
 		print("Training already in progress, ignoring request.")
-
 		return
 
 	if playback_running:
 		print("Cannot start training while playback is running.")
-
 		return
 
 	training_in_progress = true
@@ -249,25 +207,18 @@ func run_configured_training() -> void:
 
 	print("")
 	print("==========================================")
-	print("STARTING ACCELERATED VISUAL TRAINING")
+	print("STARTING V3 TRAINING")
 	print("==========================================")
 	print("Episodes: ", training_episodes)
-	print("Training seeds: ", trainer.training_seeds)
+	print("Greedy fine-tune episodes: ", greedy_finetune_episodes)
 	print("Alpha: ", alpha)
 	print("Gamma: ", gamma)
 	print("Epsilon start: ", epsilon_start)
-	print("Epsilon end: ", epsilon_end)
+	print("Epsilon min: ", epsilon_end)
 	print("Epsilon decay: ", epsilon_decay)
-	print("Visual map refresh: every ", visual_training_interval, " episodes")
-	print("")
-	print("The agent is training rapidly between visual snapshots.")
-	print("P / R / M / N are disabled until training finishes.")
+	print("Visual refresh: every ", visual_training_interval, " episodes")
 	print("")
 
-	# run_training() still performs the exact same Q-learning
-	# update on every episode. The only difference is that
-	# every N episodes it gives Godot one frame to display
-	# the current training state.
 	var rewards := await trainer.run_training(
 		training_episodes,
 		alpha,
@@ -277,120 +228,91 @@ func run_configured_training() -> void:
 		epsilon_decay,
 		visual_training_interval,
 		Callable(self, "_on_training_snapshot"),
+		greedy_finetune_episodes,
 	)
 
-	var log_saved := trainer.save_training_log("res://data/training_log.json")
+	var log_saved := trainer.save_training_log(TRAINING_LOG_PATH)
+	var weights_saved := false
 
-	var q_table_saved := false
-
-	if save_q_table_after_training:
-		q_table_saved = q_learning.save_q_table(Q_TABLE_PATH)
+	if save_weights_after_training:
+		weights_saved = q_learning.save_weights(WEIGHTS_PATH)
 
 	print("")
 	print("==========================================")
 	print("TRAINING COMPLETE")
 	print("==========================================")
 	print("Episodes completed: ", rewards.size())
-	print("Q-table states learned: ", q_learning.q_table.size())
+	print("Learned weights: ", q_learning.weights)
 	print("Training log save successful: ", log_saved)
-	print("Q-table save successful: ", q_table_saved)
+	print("Weights save successful: ", weights_saved)
 	print("")
 
-	# --------------------------------------------------
-	# Held-out evaluation.
-	# --------------------------------------------------
 	if hud != null:
 		hud.on_training_evaluating()
 
+	# V3 evaluates against separately seeded, unseen random maps.
 	var evaluation_results := trainer.evaluate_test_maps()
 
 	if hud != null:
 		hud.on_evaluation_finished(evaluation_results)
 		hud.on_training_finished({
 			"total_episodes": rewards.size(),
-			"states_learned": q_learning.q_table.size(),
+			"states_learned": q_learning.weights.size(),
 		})
 
-	print("HELD-OUT EVALUATION RESULTS")
-
+	print("LEARNED AGENT UNSEEN-MAP EVALUATION")
 	for result in evaluation_results:
 		print(
-			"Seed: ",
-			result["seed"],
-			" | Reward: ",
-			result["reward"],
-			" | Steps: ",
-			result["steps"],
-			" | Completed: ",
-			result["completed"],
-			" | Remaining collectibles: ",
-			result["remaining_collectibles"],
+			"Seed: ", result["seed"],
+			" | Reward: ", result["reward"],
+			" | Steps: ", result["steps"],
+			" | Completed: ", result["completed"],
+			" | Remaining collectibles: ", result["remaining_collectibles"],
 		)
 
 	print("")
 
 	training_in_progress = false
-
 	setup_demo_map(MAP_SEED)
 
-	print("")
 	print("Training finished.")
 	print("")
 
-# --------------------------------------------------
-# Visual training snapshot
-# --------------------------------------------------
-
 
 func _on_training_snapshot(data: Dictionary) -> void:
-	# The Trainer hands us the map's *starting* state for this
-	# snapshot episode - full collectibles, agent at spawn - not
-	# whatever's left once the episode has already run to
-	# completion. Render that "before" picture instead of
-	# agent.grid_data, which by this point usually already has
-	# every collectible cleared out.
 	var snapshot_grid: Array = data.get("grid_snapshot", agent.grid_data)
 	var snapshot_position: Vector2i = data.get("position", agent.grid_position)
 
 	grid_renderer.render_grid(snapshot_grid, grid_map)
 
-	# Snap the agent's visual transform to match the "before" snapshot
-	# too, rather than leaving it wherever it last drifted to during
-	# the (unrendered) fast training loop.
 	var snapshot_world_position := grid_renderer.grid_to_world(snapshot_position)
 	agent.position = snapshot_world_position
 	agent.visual_target_position = snapshot_world_position
 
 	if hud != null:
-		data["states_count"] = q_learning.q_table.size()
+		data["states_count"] = q_learning.weights.size()
 		hud.on_training_progress(data)
 
 	print(
-		"Training snapshot | Episode ",
-		data["episode"],
-		"/",
-		data["total_episodes"],
-		" | Seed: ",
-		data["seed"],
-		" | Reward: ",
-		data["reward"],
-		" | Epsilon: ",
-		data["epsilon"],
-		" | Collectibles (before): ",
-		data["remaining_collectibles"],
-		" | Start position: ",
-		data["position"],
+		"Training snapshot | Episode ", data["episode"],
+		"/", data["total_episodes"],
+		" | Seed: ", data["seed"],
+		" | Reward: ", data["reward"],
+		" | Epsilon: ", data["epsilon"],
+		" | Items: ", data.get("items", 0),
+		"/", trainer.NUM_COLLECTIBLES,
+		" | Success: ", data.get("success", false),
+		" | Start position: ", data["position"],
 	)
+
 
 # --------------------------------------------------
 # Start trained playback
 # --------------------------------------------------
 
-
 func start_trained_playback() -> void:
 	if training_in_progress:
 		print("Cannot start playback while training is in progress.")
-
 		return
 
 	print("")
@@ -399,15 +321,11 @@ func start_trained_playback() -> void:
 	print("==========================================")
 	print("Current map seed: ", MAP_SEED)
 
-	# Load the saved policy before starting playback.
-	if not load_configured_q_table():
-		print("ERROR: Could not load trained Q-table. Train first!")
-
+	if not load_configured_weights():
+		print("ERROR: Could not load trained V3 weights. Train first!")
 		playback_running = false
-
 		return
 
-	# Reset to the current map.
 	setup_demo_map(MAP_SEED)
 
 	playback_mode = PlaybackMode.TRAINED
@@ -422,15 +340,14 @@ func start_trained_playback() -> void:
 	print("Playback started")
 	print("")
 
+
 # --------------------------------------------------
 # Start random playback
 # --------------------------------------------------
 
-
 func start_random_playback() -> void:
 	if training_in_progress:
 		print("Cannot start playback while training is in progress.")
-
 		return
 
 	print("")
@@ -439,7 +356,6 @@ func start_random_playback() -> void:
 	print("==========================================")
 	print("Current map seed: ", MAP_SEED)
 
-	# Reset to the current map.
 	setup_demo_map(MAP_SEED)
 
 	playback_mode = PlaybackMode.RANDOM
@@ -453,72 +369,57 @@ func start_random_playback() -> void:
 	print("Playback started")
 	print("")
 
+
 # --------------------------------------------------
 # Automatic playback loop
 # --------------------------------------------------
-
 
 func _process(delta: float) -> void:
 	if not playback_running:
 		return
 
 	playback_timer -= delta
-
 	if playback_timer > 0.0:
 		return
 
 	playback_timer = playback_step_delay
-
 	run_playback_step()
+
 
 # --------------------------------------------------
 # Execute one automatic action
 # --------------------------------------------------
 
-
 func run_playback_step() -> void:
 	if not playback_running:
 		return
 
-	# Safety termination condition.
-	if playback_steps >= MAX_PLAYBACK_STEPS:
+	if playback_steps >= max_playback_steps:
 		finish_playback(false)
-
 		return
 
-	var state_key := agent.get_state_key()
-
 	var action: int
+	var q_summary := ""
 
-	# --------------------------------------------------
-	# Trained policy.
-	# --------------------------------------------------
 	if playback_mode == PlaybackMode.TRAINED:
-		action = q_learning.get_action(state_key, 0.0)
-
-	# --------------------------------------------------
-	# Random policy.
-	#
-	# This does not modify the Q-table.
-	# --------------------------------------------------
+		var phi := agent.get_features()
+		var q_values := q_learning.q_values(phi)
+		action = q_learning.get_action(phi, 0.0)
+		q_summary = "Q=%s" % str(q_values)
 
 	elif playback_mode == PlaybackMode.RANDOM:
-		action = randi_range(GridAgent.Action.UP, GridAgent.Action.RIGHT)
+		action = randi_range(0, QLearning.ACTION_COUNT - 1)
 
 	else:
 		return
 
-	var result: Dictionary = agent.try_move(action)
-
-	var reward: float = result["reward"]
+	var result: Dictionary = agent.try_move(action, gamma)
+	var reward := float(result["reward"])
 
 	playback_total_reward += reward
 	playback_steps += 1
 
-	# --------------------------------------------------
-	# Remove collected item visually.
-	# --------------------------------------------------
-	if result["collected"]:
+	if result["collected"] or result["completed"]:
 		grid_renderer.render_grid(agent.grid_data, grid_map)
 
 	if hud != null:
@@ -529,36 +430,28 @@ func run_playback_step() -> void:
 		})
 
 	print(
-		"Playback step ",
-		playback_steps,
-		" | State: ",
-		state_key,
-		" | Action: ",
-		action_name(action),
-		" | Reward: ",
-		reward,
-		" | Total reward: ",
-		playback_total_reward,
-		" | Remaining collectibles: ",
-		agent.get_collectible_count(),
+		"Playback step ", playback_steps,
+		" | Action: ", action_name(action),
+		" | Reward: ", reward,
+		" | Total reward: ", playback_total_reward,
+		" | Remaining collectibles: ", agent.get_collectible_count(),
+		" | ", q_summary,
 	)
 
-	if result["completed"]:
-		finish_playback(true)
+	if result["completed"] or result["done"]:
+		finish_playback(bool(result["completed"]))
+
 
 # --------------------------------------------------
 # Finish automatic episode
 # --------------------------------------------------
 
-
 func finish_playback(completed: bool) -> void:
 	playback_running = false
 
 	var policy_name := "Unknown"
-
 	if playback_mode == PlaybackMode.TRAINED:
 		policy_name = "Trained"
-
 	elif playback_mode == PlaybackMode.RANDOM:
 		policy_name = "Random"
 
@@ -570,18 +463,13 @@ func finish_playback(completed: bool) -> void:
 	print("Seed: ", MAP_SEED)
 	print("Steps: ", playback_steps)
 	print("Reward: ", playback_total_reward)
-
 	print(
 		"Items collected: ",
 		playback_start_collectibles - agent.get_collectible_count(),
-		"/",
-		playback_start_collectibles,
+		"/", playback_start_collectibles,
 	)
-
 	print("Remaining collectibles: ", agent.get_collectible_count())
-
 	print("Completed: ", completed)
-
 	print("==========================================")
 	print("")
 
@@ -598,19 +486,15 @@ func finish_playback(completed: bool) -> void:
 # Utility
 # --------------------------------------------------
 
-
 func action_name(action: int) -> String:
 	match action:
-		GridAgent.Action.UP:
+		0:
 			return "UP"
-
-		GridAgent.Action.DOWN:
+		1:
 			return "DOWN"
-
-		GridAgent.Action.LEFT:
+		2:
 			return "LEFT"
-
-		GridAgent.Action.RIGHT:
+		3:
 			return "RIGHT"
 
 	return "UNKNOWN"
