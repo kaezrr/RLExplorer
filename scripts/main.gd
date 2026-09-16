@@ -16,13 +16,13 @@ class_name RLExplorerMain
 # V3 training configuration
 # --------------------------------------------------
 
-@export var training_episodes := 15000
+@export var training_episodes := 5000
 @export var greedy_finetune_episodes := 5000
-@export var alpha := 0.015
-@export var gamma := 0.98
+@export var alpha := 0.1
+@export var gamma := 0.9
 @export var epsilon_start := 1.0
 @export var epsilon_end := 0.05
-@export var epsilon_decay := 0.9995
+@export var epsilon_decay := 0.995
 
 @export var save_weights_after_training := true
 @export var load_trained_weights := false

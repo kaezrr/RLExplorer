@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://di0ey0wvndhmh"]
 
-[ext_resource type="Script" uid="uid://dh4ae2ergthvf" path="res://scripts/main.gd" id="1_0wfyh"]
+[ext_resource type="Script" uid="uid://c7qlfkgvredaw" path="res://scripts/main.gd" id="1_0wfyh"]
 [ext_resource type="MeshLibrary" uid="uid://tkktuvvgibxh" path="res://assets/mesh_library.tres" id="1_o5qli"]
 [ext_resource type="Script" uid="uid://cobqvaad7llvj" path="res://scripts/camera.gd" id="3_jyhfs"]
 [ext_resource type="Script" uid="uid://cv6ewouo252hs" path="res://scripts/agent.gd" id="3_sugp2"]
@@ -52,10 +52,6 @@ corner_radius_bottom_left = 8
 
 [node name="Main" type="Node3D" unique_id=341774346]
 script = ExtResource("1_0wfyh")
-training_episodes = 5000
-alpha = 0.1
-gamma = 0.9
-epsilon_decay = 0.995
 
 [node name="GridMap" type="GridMap" parent="." unique_id=235537360]
 mesh_library = ExtResource("1_o5qli")
