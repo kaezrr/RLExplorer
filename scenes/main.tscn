@@ -2,10 +2,10 @@
 
 [ext_resource type="Script" uid="uid://c7qlfkgvredaw" path="res://scripts/main.gd" id="1_0wfyh"]
 [ext_resource type="MeshLibrary" uid="uid://tkktuvvgibxh" path="res://assets/mesh_library.tres" id="1_o5qli"]
-[ext_resource type="Script" uid="uid://cobqvaad7llvj" path="res://scripts/camera.gd" id="3_jyhfs"]
+[ext_resource type="Script" uid="uid://bntp50u44li6t" path="res://scripts/camera.gd" id="3_jyhfs"]
 [ext_resource type="Script" uid="uid://cv6ewouo252hs" path="res://scripts/agent.gd" id="3_sugp2"]
 [ext_resource type="Script" uid="uid://dtlhw70bisfqs" path="res://scripts/editor_grid_preview.gd" id="3_tbgi4"]
-[ext_resource type="Script" uid="uid://b6t14s3upo61w" path="res://scripts/hud.gd" id="4_hud01"]
+[ext_resource type="Script" uid="uid://7b8so8dni04v" path="res://scripts/hud.gd" id="4_hud01"]
 [ext_resource type="Script" uid="uid://2elfo73ud1mc" path="res://scripts/reward_graph.gd" id="5_rwgr1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f1vde"]

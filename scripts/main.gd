@@ -17,12 +17,11 @@ class_name RLExplorerMain
 # --------------------------------------------------
 
 @export var training_episodes := 5000
-@export var greedy_finetune_episodes := 5000
-@export var alpha := 0.1
-@export var gamma := 0.9
+@export var alpha := 0.015
+@export var gamma := 0.98
 @export var epsilon_start := 1.0
 @export var epsilon_end := 0.05
-@export var epsilon_decay := 0.995
+@export var epsilon_decay := 0.9995
 
 @export var save_weights_after_training := true
 @export var load_trained_weights := false
@@ -210,7 +209,6 @@ func run_configured_training() -> void:
 	print("STARTING V3 TRAINING")
 	print("==========================================")
 	print("Episodes: ", training_episodes)
-	print("Greedy fine-tune episodes: ", greedy_finetune_episodes)
 	print("Alpha: ", alpha)
 	print("Gamma: ", gamma)
 	print("Epsilon start: ", epsilon_start)
@@ -228,7 +226,6 @@ func run_configured_training() -> void:
 		epsilon_decay,
 		visual_training_interval,
 		Callable(self, "_on_training_snapshot"),
-		greedy_finetune_episodes,
 	)
 
 	var log_saved := trainer.save_training_log(TRAINING_LOG_PATH)

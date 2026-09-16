@@ -13,7 +13,6 @@ const NUM_COLLECTIBLES := 6
 const MAX_STEPS := 1152
 
 const TRAIN_EPISODES_DEFAULT := 15000
-const GREEDY_FINETUNE_EPISODES_DEFAULT := 5000
 const TEST_EPISODES_DEFAULT := 300
 
 const ALPHA_DEFAULT := 0.015
@@ -64,7 +63,6 @@ func run_training(
 	epsilon_decay: float = EPSILON_DECAY_DEFAULT,
 	visual_interval: int = 50,
 	visual_callback: Callable = Callable(),
-	greedy_finetune_episodes: int = 0,
 ) -> Array[float]:
 	episode_rewards.clear()
 	episode_success.clear()
@@ -74,8 +72,6 @@ func run_training(
 
 	var epsilon := epsilon_start
 	var safe_visual_interval: int = max(1, visual_interval)
-	var safe_finetune := clampi(greedy_finetune_episodes, 0, num_episodes)
-	var finetune_start := num_episodes - safe_finetune
 
 	var batch_rewards: Array[float] = []
 	var batch_start_episode := 0
@@ -98,11 +94,6 @@ func run_training(
 			snapshot_start_position = grid_world.find_agent_start(snapshot_grid)
 			snapshot_collectibles = grid_world.get_collectibles(snapshot_grid).size()
 
-		# V3's final phase is pure greedy fine-tuning. This is applied to the
-		# action-selection epsilon, while TD learning continues normally.
-		if episode >= finetune_start:
-			epsilon = 0.0
-
 		var result := run_episode(map_seed, alpha, gamma, epsilon)
 
 		episode_rewards.append(float(result["reward"]))
@@ -112,12 +103,7 @@ func run_training(
 		episode_coverage.append(float(result["coverage"]))
 		batch_rewards.append(float(result["reward"]))
 
-		# Match the Python trainer's decay call after every episode. Once the
-		# greedy fine-tune phase starts epsilon is explicitly held at zero.
-		if episode < finetune_start:
-			epsilon = max(epsilon_end, epsilon * epsilon_decay)
-		else:
-			epsilon = 0.0
+		epsilon = max(epsilon_end, epsilon * epsilon_decay)
 
 		if show_snapshot and visual_callback.is_valid():
 			visual_callback.call({
