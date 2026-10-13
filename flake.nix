@@ -3,7 +3,10 @@
 
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.zst";
-    llm-agents.url = "github:numtide/llm-agents.nix";
+    llm-agents = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:numtide/llm-agents.nix";
+    };
   };
 
   nixConfig = {
@@ -23,6 +26,7 @@
         packages = [
           pkgs.godot
           llm-agents.freebuff
+          llm-agents.codex
         ];
       };
     };
